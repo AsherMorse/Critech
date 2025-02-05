@@ -8,13 +8,34 @@ import { initializeCloudinary } from './config/cloudinary';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Enable CORS
+// Catch-all logging middleware (before anything else)
+app.use((req, res, next) => {
+  console.error('\n\n💥💥💥 INCOMING REQUEST 💥💥💥')
+  console.error('Time:', new Date().toISOString())
+  console.error('Method:', req.method)
+  console.error('URL:', req.url)
+  console.error('Headers:', req.headers)
+  console.error('💥💥💥 END REQUEST LOG 💥💥💥\n\n')
+  next()
+});
+
+// Enable CORS with logging
 app.use(cors({
   origin: ['https://critech.ashermorse.org', 'http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Accept'],
   credentials: true
 }));
+
+// Log CORS preflight requests
+app.options('*', (req, res, next) => {
+  console.error('\n\n⚡️⚡️⚡️ CORS PREFLIGHT REQUEST ⚡️⚡️⚡️')
+  console.error('Method:', req.method)
+  console.error('URL:', req.url)
+  console.error('Headers:', JSON.stringify(req.headers, null, 2))
+  console.error('⚡️⚡️⚡️ END CORS PREFLIGHT ⚡️⚡️⚡️\n\n')
+  next()
+});
 
 app.use(express.json());
 
@@ -36,11 +57,11 @@ const startServer = async () => {
       const oldSend = res.send;
       res.send = function(data: any) {
         if (req.url.includes('/api/videos/upload')) {
-          console.error('📤 UPLOAD RESPONSE:')
+          console.error('\n\n🌟🌟🌟 UPLOAD RESPONSE 🌟🌟🌟')
           console.error('Status:', res.statusCode)
           console.error('Headers:', JSON.stringify(res.getHeaders(), null, 2))
           console.error('Body:', data)
-          console.error('==================================')
+          console.error('🌟🌟🌟 END UPLOAD RESPONSE 🌟🌟🌟\n\n')
         }
         return oldSend.call(res, data);
       };
@@ -60,4 +81,13 @@ const startServer = async () => {
 };
 
 // Start the server
-startServer(); 
+startServer();
+
+// Log that the file was loaded
+console.error('\n\n')
+console.error('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
+console.error('SERVER FILE LOADED AND EXECUTED')
+console.error('TIME:', new Date().toISOString())
+console.error('NODE_ENV:', process.env.NODE_ENV)
+console.error('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
+console.error('\n\n') 
