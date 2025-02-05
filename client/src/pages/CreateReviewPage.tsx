@@ -48,7 +48,15 @@ export default function CreateReviewPage() {
       formData.append('video', file)
 
       const xhr = new XMLHttpRequest()
-      xhr.open('POST', '/api/videos/upload', true)
+      const apiUrl = '/api/videos/upload'
+      console.log('🚀 Making API call to:', window.location.origin + apiUrl)
+      console.log('📦 File details:', {
+        name: file.name,
+        type: file.type,
+        size: (file.size / (1024 * 1024)).toFixed(2) + ' MB'
+      })
+
+      xhr.open('POST', apiUrl, true)
       xhr.setRequestHeader('Accept', 'application/json')
       
       xhr.upload.onprogress = (event) => {
@@ -56,14 +64,15 @@ export default function CreateReviewPage() {
           // Upload is 50% of the total progress
           const progress = Math.round((event.loaded * 50) / event.total)
           setUploadProgress(progress)
+          console.log(`📤 Upload progress: ${progress}%`)
         }
       }
 
       xhr.onload = () => {
         try {
-          console.log('Raw response:', xhr.responseText)
-          console.log('Response status:', xhr.status)
-          console.log('Response headers:', xhr.getAllResponseHeaders())
+          console.log('📥 Raw response:', xhr.responseText)
+          console.log('🔢 Response status:', xhr.status)
+          console.log('📋 Response headers:', xhr.getAllResponseHeaders())
 
           // Handle empty response
           if (!xhr.responseText) {
