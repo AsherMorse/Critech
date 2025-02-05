@@ -17,11 +17,16 @@ export const errorHandler: ErrorRequestHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  console.error('🔥 Error in request:')
-  console.error('- URL:', req.url)
-  console.error('- Method:', req.method)
-  console.error('- Headers:', req.headers)
-  console.error('- Error:', err)
+  console.error('🚨 ===============================')
+  console.error('🚨 ERROR IN REQUEST')
+  console.error('🚨 ===============================')
+  console.error('🚨 URL:', req.url)
+  console.error('🚨 Method:', req.method)
+  console.error('🚨 Headers:', JSON.stringify(req.headers, null, 2))
+  console.error('🚨 Error Name:', err.name)
+  console.error('🚨 Error Message:', err.message)
+  console.error('🚨 Error Stack:', err.stack)
+  console.error('🚨 ===============================')
 
   if (err instanceof ApiError) {
     res.status(err.statusCode).json({
