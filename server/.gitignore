@@ -33,4 +33,7 @@ logs/
 coverage/
 
 # TypeScript cache
-*.tsbuildinfo 
+*.tsbuildinfo
+
+# Drizzle
+drizzle/
