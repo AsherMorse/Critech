@@ -3,6 +3,7 @@ import { BaseController } from './base.controller'
 import { ApiError } from '../middleware/error-handler'
 import cloudinary, { UPLOAD_PRESETS } from '../config/cloudinary'
 import crypto from 'crypto'
+import VideosService from '../services/videos.service'
 
 class VideosController extends BaseController {
   constructor() {
@@ -40,10 +41,30 @@ class VideosController extends BaseController {
       throw new ApiError(401, 'Invalid webhook signature')
     }
 
-    // TODO: Update video status based on webhook notification
-    console.log('Webhook notification:', req.body)
+    const notification = req.body
 
-    res.json({ received: true })
+    try {
+      // Handle different notification types
+      switch (notification.notification_type) {
+        case 'upload':
+          // Create new video record on initial upload
+          await VideosService.createVideo(notification)
+          break
+
+        case 'eager':
+          // Update video status when processing is complete
+          await VideosService.updateVideoStatus(notification)
+          break
+
+        default:
+          console.log('Unhandled notification type:', notification.notification_type)
+      }
+
+      res.json({ received: true })
+    } catch (error: any) {
+      console.error('Error processing webhook:', error)
+      throw new ApiError(500, 'Error processing webhook: ' + error.message)
+    }
   })
 
   private generateSignature(params: Record<string, any>): string {

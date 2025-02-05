@@ -32,7 +32,9 @@ export const VIDEO_PROFILES = {
     streaming_profile: 'hd',
     transformation: [
       { quality: 'auto' },
-      { fetch_format: 'auto' }
+      { fetch_format: 'auto' },
+      { video_codec: 'h264' },
+      { audio_codec: 'aac' }
     ]
   },
   DASH: {
@@ -40,7 +42,9 @@ export const VIDEO_PROFILES = {
     streaming_profile: 'hd',
     transformation: [
       { quality: 'auto' },
-      { fetch_format: 'auto' }
+      { fetch_format: 'auto' },
+      { video_codec: 'h264' },
+      { audio_codec: 'aac' }
     ]
   },
   // Quality-specific profiles
@@ -48,21 +52,27 @@ export const VIDEO_PROFILES = {
     transformation: [
       { width: 1920, height: 1080, crop: 'limit' },
       { quality: 'auto:good' },
-      { fetch_format: 'auto' }
+      { fetch_format: 'auto' },
+      { video_codec: 'h264' },
+      { audio_codec: 'aac' }
     ]
   },
   SD: {
     transformation: [
       { width: 1280, height: 720, crop: 'limit' },
       { quality: 'auto:eco' },
-      { fetch_format: 'auto' }
+      { fetch_format: 'auto' },
+      { video_codec: 'h264' },
+      { audio_codec: 'aac' }
     ]
   },
   MOBILE: {
     transformation: [
       { width: 854, height: 480, crop: 'limit' },
       { quality: 'auto:low' },
-      { fetch_format: 'auto' }
+      { fetch_format: 'auto' },
+      { video_codec: 'h264' },
+      { audio_codec: 'aac' }
     ]
   },
   // Thumbnail profiles
@@ -121,13 +131,12 @@ export const configureCors = async () => {
   }
 }
 
-// Create upload presets if they don't exist
+// Create or update upload presets
 export const ensureUploadPresets = async () => {
   try {
     // Review video preset
     try {
-      await cloudinary.api.create_upload_preset({
-        name: UPLOAD_PRESETS.REVIEW_VIDEO,
+      const videoPresetConfig = {
         folder: 'reviews',
         resource_type: 'video',
         allowed_formats: 'mp4,webm,mov,avi',
@@ -145,20 +154,31 @@ export const ensureUploadPresets = async () => {
         ],
         eager_async: true,
         eager_notification_url: `${process.env.SERVER_URL}/api/videos/webhook`,
-        transformation: VIDEO_PROFILES.HD.transformation
-      })
-      console.log('Created video upload preset')
-    } catch (error: any) {
-      if (!error.error?.message?.includes('already exists')) {
-        throw error
+        transformation: [
+          ...VIDEO_PROFILES.HD.transformation,
+          { duration: "initial" }  // Preserve original duration
+        ]
       }
-      console.log('Video upload preset already exists')
-    }
 
-    // Review thumbnail preset
-    try {
-      await cloudinary.api.create_upload_preset({
-        name: UPLOAD_PRESETS.REVIEW_THUMBNAIL,
+      try {
+        // Try to create first
+        await cloudinary.api.create_upload_preset({
+          name: UPLOAD_PRESETS.REVIEW_VIDEO,
+          ...videoPresetConfig
+        })
+        console.log('Created video upload preset')
+      } catch (error: any) {
+        if (error.error?.http_code === 409) {
+          // Preset exists, update it
+          await cloudinary.api.update_upload_preset(UPLOAD_PRESETS.REVIEW_VIDEO, videoPresetConfig)
+          console.log('Updated video upload preset')
+        } else {
+          throw error
+        }
+      }
+
+      // Review thumbnail preset
+      const thumbnailPresetConfig = {
         folder: 'reviews/thumbnails',
         resource_type: 'image',
         allowed_formats: 'jpg,png,webp',
@@ -166,17 +186,31 @@ export const ensureUploadPresets = async () => {
         unique_filename: true,
         allowed_origins: ALLOWED_ORIGINS,
         transformation: VIDEO_PROFILES.THUMBNAIL.transformation
-      })
-      console.log('Created thumbnail upload preset')
-    } catch (error: any) {
-      if (!error.error?.message?.includes('already exists')) {
-        throw error
       }
-      console.log('Thumbnail upload preset already exists')
+
+      try {
+        // Try to create first
+        await cloudinary.api.create_upload_preset({
+          name: UPLOAD_PRESETS.REVIEW_THUMBNAIL,
+          ...thumbnailPresetConfig
+        })
+        console.log('Created thumbnail upload preset')
+      } catch (error: any) {
+        if (error.error?.http_code === 409) {
+          // Preset exists, update it
+          await cloudinary.api.update_upload_preset(UPLOAD_PRESETS.REVIEW_THUMBNAIL, thumbnailPresetConfig)
+          console.log('Updated thumbnail upload preset')
+        } else {
+          throw error
+        }
+      }
+    } catch (error: any) {
+      console.error('Error creating/updating upload presets:', error)
+      throw new Error('Failed to create/update upload presets: ' + error.message)
     }
   } catch (error: any) {
-    console.error('Error creating upload presets:', error)
-    throw new Error('Failed to create upload presets: ' + error.message)
+    console.error('Error in preset configuration:', error)
+    throw new Error('Failed to configure presets: ' + error.message)
   }
 }
 
