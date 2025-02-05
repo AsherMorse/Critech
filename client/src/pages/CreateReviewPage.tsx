@@ -49,7 +49,7 @@ export default function CreateReviewPage() {
 
       const xhr = new XMLHttpRequest()
       const apiUrl = '/api/videos/upload'
-      console.log('🚀 Making API call to:', window.location.origin + apiUrl)
+      console.log('🚀 Making API call to:', process.env.VITE_API_URL + apiUrl)
       console.log('📦 File details:', {
         name: file.name,
         type: file.type,
