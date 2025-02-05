@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import reviewsRouter from './routes/reviews';
 import videosRouter from './routes/videos';
 import { errorHandler } from './middleware/error-handler';
@@ -7,46 +8,50 @@ import { initializeCloudinary } from './config/cloudinary';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.error('🔥 INCOMING REQUEST 🔥')
-  console.error('URL:', req.url)
-  console.error('Method:', req.method)
-  console.error('Headers:', JSON.stringify(req.headers, null, 2))
-  next()
-})
+// Enable CORS
+app.use(cors({
+  origin: ['https://critech.ashermorse.org', 'http://localhost:5173'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Accept'],
+  credentials: true
+}));
 
 app.use(express.json());
 
 // Initialize server
 const startServer = async () => {
   try {
-    console.error('🚀 SERVER STARTING 🚀')
-    
-    // Initialize Cloudinary first
     await initializeCloudinary();
-    console.error('✅ Cloudinary initialized')
 
     // Mount routes
     app.use('/api/reviews', reviewsRouter);
     app.use('/api/videos', videosRouter);
-    console.error('✅ Routes mounted')
 
     app.get('/', (req, res) => {
       res.json({ message: 'Welcome to Critech API' });
     });
 
+    // Response logging middleware
+    app.use((req, res, next) => {
+      const oldSend = res.send;
+      res.send = function(data: any) {
+        if (req.url.includes('/api/videos/upload')) {
+          console.error('📤 UPLOAD RESPONSE:')
+          console.error('Status:', res.statusCode)
+          console.error('Headers:', JSON.stringify(res.getHeaders(), null, 2))
+          console.error('Body:', data)
+          console.error('==================================')
+        }
+        return oldSend.call(res, data);
+      };
+      next();
+    });
+
     // Error handling middleware should be last
     app.use(errorHandler);
 
-    // Start listening
     app.listen(port, () => {
-      console.error('==================================')
-      console.error('🌍 SERVER IS RUNNING')
-      console.error(`Port: ${port}`)
-      console.error(`Environment: ${process.env.NODE_ENV || 'development'}`)
-      console.error(`Server URL: ${process.env.SERVER_URL || 'not set'}`)
-      console.error('==================================')
+      console.error(`Server running on port ${port}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

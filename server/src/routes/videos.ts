@@ -8,18 +8,13 @@ const upload = multer({ storage: multer.memoryStorage() })
 
 // Direct upload endpoint
 router.post('/upload', upload.single('video'), (req: Request, res: Response, next: NextFunction) => {
-  console.warn('⚠️ === UPLOAD REQUEST RECEIVED ===')
-  console.warn('⚠️ Headers:', JSON.stringify(req.headers, null, 2))
-  console.warn('⚠️ File:', req.file ? JSON.stringify({
-    fieldname: req.file.fieldname,
-    originalname: req.file.originalname,
-    mimetype: req.file.mimetype,
-    size: req.file.size
-  }, null, 2) : 'NO FILE RECEIVED')
-  console.warn('⚠️ Body:', JSON.stringify(req.body, null, 2))
-  console.warn('⚠️ URL:', req.url)
-  console.warn('⚠️ Method:', req.method)
-  console.warn('⚠️ === END UPLOAD REQUEST ===')
+  console.error('📥 UPLOAD REQUEST:')
+  console.error('File:', req.file ? {
+    name: req.file.originalname,
+    type: req.file.mimetype,
+    size: Math.round(req.file.size / 1024) + ' KB'
+  } : 'NO FILE RECEIVED')
+  console.error('==================================')
   return VideosController.uploadVideo(req, res, next)
 })
 
