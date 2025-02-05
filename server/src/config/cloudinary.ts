@@ -5,14 +5,23 @@ import { config } from 'dotenv'
 config()
 
 // Ensure required environment variables are set
-if (!process.env.SERVER_URL) {
-  throw new Error('SERVER_URL environment variable is required')
+const requiredEnvVars = [
+  'SERVER_URL',
+  'CLOUDINARY_CLOUD_NAME',
+  'CLOUDINARY_API_KEY',
+  'CLOUDINARY_API_SECRET'
+] as const
+
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    throw new Error(`${envVar} environment variable is required`)
+  }
 }
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
-  process.env.SERVER_URL,           // API server URL
-  process.env.SERVER_URL.replace('http:', 'https:'), // HTTPS version
+  process.env.SERVER_URL!,           // API server URL
+  process.env.SERVER_URL!.replace('http:', 'https:'), // HTTPS version
 ].filter(Boolean) as string[]
 
 // Video transformation profiles
