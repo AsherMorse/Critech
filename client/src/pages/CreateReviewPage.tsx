@@ -83,6 +83,15 @@ export default function CreateReviewPage() {
             return
           }
 
+          // Handle 405 Method Not Allowed specifically
+          if (xhr.status === 405) {
+            console.error('Method not allowed error')
+            setError('Server configuration error: Upload method not allowed. Please contact support.')
+            setIsUploading(false)
+            setUploadProgress(0)
+            return
+          }
+
           const response = JSON.parse(xhr.responseText)
           
           if (xhr.status === 201) {
