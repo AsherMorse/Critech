@@ -1,6 +1,5 @@
 import { Box, AppBar, Toolbar, Typography, Paper, ThemeProvider, createTheme, BottomNavigation, BottomNavigationAction } from '@mui/material'
 import { AccountCircle, Home } from '@mui/icons-material'
-import { useAuth } from '../contexts/AuthContext'
 import { useState } from 'react'
 import HomeView from '../components/HomeView'
 import ProfileView from '../components/ProfileView'
@@ -73,7 +72,7 @@ export default function Dashboard() {
         >
           <BottomNavigation
             value={value}
-            onChange={(event, newValue) => {
+            onChange={(_event, newValue) => {
               setValue(newValue)
             }}
             sx={{
@@ -86,7 +85,7 @@ export default function Dashboard() {
               }
             }}
           >
-            {navigationTabs.map((tab, index) => (
+            {navigationTabs.map((tab) => (
               <BottomNavigationAction 
                 key={tab.label}
                 label={tab.label} 
