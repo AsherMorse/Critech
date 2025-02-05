@@ -5,13 +5,21 @@ import { config } from 'dotenv'
 
 config()
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is required')
+// Validate required database configuration
+const requiredEnvVars = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD'] as const;
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing ${envVar} in environment variables`);
+  }
 }
 
 // Initialize postgres.js client
-const client = postgres(process.env.DATABASE_URL, { 
-  prepare: false,  // Disable prepare statements for Supabase pooler
+const client = postgres({
+  host: process.env.DB_HOST!,
+  port: parseInt(process.env.DB_PORT!),
+  database: process.env.DB_NAME!,
+  username: process.env.DB_USER!,
+  password: process.env.DB_PASSWORD!,
   ssl: 'require',
   max: 20,
   idle_timeout: 20,
@@ -21,4 +29,4 @@ const client = postgres(process.env.DATABASE_URL, {
 // Create Drizzle ORM instance
 const db = drizzle(client, { schema })
 
-export { db, client } 
+export { db, client }
