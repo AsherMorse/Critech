@@ -49,14 +49,15 @@ export default function CreateReviewPage() {
 
       const xhr = new XMLHttpRequest()
       const apiUrl = '/api/videos/upload'
-      console.log('🚀 Making API call to:', process.env.VITE_API_URL + apiUrl)
+      const fullUrl = import.meta.env.VITE_API_URL + apiUrl
+      console.log('🚀 Making API call to:', fullUrl)
       console.log('📦 File details:', {
         name: file.name,
         type: file.type,
         size: (file.size / (1024 * 1024)).toFixed(2) + ' MB'
       })
 
-      xhr.open('POST', apiUrl, true)
+      xhr.open('POST', fullUrl, true)
       xhr.setRequestHeader('Accept', 'application/json')
       
       xhr.upload.onprogress = (event) => {
