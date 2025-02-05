@@ -7,18 +7,30 @@ import { initializeCloudinary } from './config/cloudinary';
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.error('🔥 INCOMING REQUEST 🔥')
+  console.error('URL:', req.url)
+  console.error('Method:', req.method)
+  console.error('Headers:', JSON.stringify(req.headers, null, 2))
+  next()
+})
+
 app.use(express.json());
 
 // Initialize server
 const startServer = async () => {
   try {
+    console.error('🚀 SERVER STARTING 🚀')
+    
     // Initialize Cloudinary first
     await initializeCloudinary();
-    console.log('Cloudinary initialized successfully');
+    console.error('✅ Cloudinary initialized')
 
     // Mount routes
     app.use('/api/reviews', reviewsRouter);
     app.use('/api/videos', videosRouter);
+    console.error('✅ Routes mounted')
 
     app.get('/', (req, res) => {
       res.json({ message: 'Welcome to Critech API' });
@@ -29,7 +41,12 @@ const startServer = async () => {
 
     // Start listening
     app.listen(port, () => {
-      console.log(`Server is running on port ${port}`);
+      console.error('==================================')
+      console.error('🌍 SERVER IS RUNNING')
+      console.error(`Port: ${port}`)
+      console.error(`Environment: ${process.env.NODE_ENV || 'development'}`)
+      console.error(`Server URL: ${process.env.SERVER_URL || 'not set'}`)
+      console.error('==================================')
     });
   } catch (error) {
     console.error('Failed to start server:', error);
