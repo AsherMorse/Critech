@@ -3,32 +3,32 @@ import { reviews } from '../db/schema'
 import { eq } from 'drizzle-orm'
 import type { ReviewStatus } from '../db/schema'
 
-export interface CreateReviewDto {
-  title: string
-  description: string
+// DTO for creating a review from a video
+export interface CreateReviewFromVideoDto {
+  videoId: number
+}
+
+// DTO for updating review details
+export interface UpdateReviewDto {
+  title?: string
+  description?: string
   pros?: string[]
   cons?: string[]
   tags?: string[]
-}
-
-export interface UpdateReviewDto extends Partial<CreateReviewDto> {
   status?: ReviewStatus
-  videoId?: number
 }
 
 class ReviewsService {
-  // Create a new draft review
-  async createDraft(data: CreateReviewDto) {
+  // Create initial review entry after video upload
+  async createFromVideo(data: CreateReviewFromVideoDto) {
     const [review] = await db.insert(reviews).values({
-      title: data.title,
-      description: data.description,
-      pros: data.pros || [],
-      cons: data.cons || [],
-      tags: data.tags || [],
-      status: 'draft',
-      isVideoReady: false,
+      videoId: data.videoId,
+      pros: [],
+      cons: [],
+      tags: [],
+      status: 'video_uploaded',
       statusHistory: [{
-        status: 'draft',
+        status: 'video_uploaded',
         timestamp: new Date().toISOString()
       }]
     }).returning()
@@ -36,31 +36,27 @@ class ReviewsService {
     return review
   }
 
-  // Get all reviews
-  async getAllReviews() {
-    return await db.query.reviews.findMany({
-      orderBy: (reviews, { desc }) => [desc(reviews.createdAt)]
-    })
-  }
-
-  // Get a review by ID
-  async getReviewById(id: number) {
-    return await db.query.reviews.findFirst({
-      where: eq(reviews.id, id)
-    })
-  }
-
-  // Update a review
+  // Update review with details
   async updateReview(id: number, data: UpdateReviewDto) {
-    const updateData: Partial<typeof reviews.$inferInsert> = { ...data }
-    
-    // If status is being updated, add to status history
-    if (updateData.status) {
-      const review = await this.getReviewById(id)
-      if (!review) {
-        throw new Error('Review not found')
-      }
+    // Get current review state
+    const review = await this.getReviewById(id)
+    if (!review) {
+      throw new Error('Review not found')
+    }
 
+    const updateData: Partial<typeof reviews.$inferInsert> = { ...data }
+
+    // If adding title and description for the first time, transition to draft
+    if (review.status === 'video_uploaded' && updateData.title && updateData.description) {
+      updateData.status = 'draft'
+      // Initialize arrays if not provided
+      updateData.pros = updateData.pros || []
+      updateData.cons = updateData.cons || []
+      updateData.tags = updateData.tags || []
+    }
+
+    // If status is being updated (either manually or automatically), add to status history
+    if (updateData.status) {
       updateData.statusHistory = [
         ...(review.statusHistory as any[]),
         {
@@ -79,6 +75,20 @@ class ReviewsService {
       .returning()
 
     return updated
+  }
+
+  // Get all reviews
+  async getAllReviews() {
+    return await db.query.reviews.findMany({
+      orderBy: (reviews, { desc }) => [desc(reviews.createdAt)]
+    })
+  }
+
+  // Get a review by ID
+  async getReviewById(id: number) {
+    return await db.query.reviews.findFirst({
+      where: eq(reviews.id, id)
+    })
   }
 
   // Delete a review

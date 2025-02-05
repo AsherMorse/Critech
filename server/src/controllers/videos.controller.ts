@@ -5,12 +5,53 @@ import cloudinary, { UPLOAD_PRESETS } from '../config/cloudinary'
 import crypto from 'crypto'
 import VideosService from '../services/videos.service'
 
+interface CreateVideoDto {
+  cloudinaryId: string
+  publicId: string
+  duration: number
+  videoUrl: string
+  metadata: {
+    format: string
+    codec: string | null
+    bitRate: number | null
+    width: number | null
+    height: number | null
+    fps: number | null
+    audioCodec: string | null
+    audioFrequency: number | null
+    aspectRatio: string | null
+    rotation: number | null
+    quality: number | null
+  }
+}
+
 class VideosController extends BaseController {
   constructor() {
     super()
+    this.createVideo = this.createVideo.bind(this)
     this.getUploadSignature = this.getUploadSignature.bind(this)
     this.handleWebhook = this.handleWebhook.bind(this)
   }
+
+  // Create a video record manually
+  createVideo = this.handleAsync(async (req: Request<{}, any, CreateVideoDto>, res: Response) => {
+    const video = await VideosService.createVideo({
+      notification_type: 'upload',
+      asset_id: req.body.cloudinaryId,
+      public_id: req.body.publicId,
+      version: Date.now(),
+      width: req.body.metadata.width || 0,
+      height: req.body.metadata.height || 0,
+      format: req.body.metadata.format,
+      resource_type: 'video',
+      created_at: new Date().toISOString(),
+      bytes: 0,
+      type: 'upload',
+      url: req.body.videoUrl,
+      secure_url: req.body.videoUrl
+    })
+    res.status(201).json(video)
+  })
 
   // Generate signature for client-side upload
   getUploadSignature = this.handleAsync(async (req: Request, res: Response) => {

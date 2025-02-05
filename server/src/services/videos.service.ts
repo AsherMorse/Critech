@@ -38,7 +38,7 @@ class VideosService {
       cloudinaryId: data.asset_id,
       publicId: data.public_id,
       duration: 0, // Will be updated when processing is complete
-      thumbnailUrl: data.secure_url,
+      videoUrl: data.secure_url,
       status: 'processing',
       metadata: {
         format: data.format,

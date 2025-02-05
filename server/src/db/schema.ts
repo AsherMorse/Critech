@@ -1,7 +1,7 @@
 import { pgTable, serial, text, varchar, jsonb, timestamp, integer, foreignKey, boolean } from 'drizzle-orm/pg-core'
 
 // Review status type
-export type ReviewStatus = 'draft' | 'pending_video' | 'in_review' | 'published' | 'archived' | 'deleted'
+export type ReviewStatus = 'video_uploaded' | 'draft' | 'in_review' | 'published' | 'archived' | 'deleted'
 
 // Videos table to store video metadata
 export const videos = pgTable('videos', {
@@ -9,7 +9,7 @@ export const videos = pgTable('videos', {
   cloudinaryId: text('cloudinary_id').notNull(), // Cloudinary resource ID
   publicId: text('public_id').notNull(), // Cloudinary public ID for URLs
   duration: integer('duration'),
-  thumbnailUrl: text('thumbnail_url'),
+  videoUrl: text('video_url'),
   status: varchar('status', { length: 50 }).notNull().default('ready'), // Cloudinary handles processing
   metadata: jsonb('metadata').default({
     format: null,         // video format (mp4, webm, etc)
@@ -29,17 +29,17 @@ export const videos = pgTable('videos', {
   updatedAt: timestamp('updated_at').defaultNow()
 })
 
-// Reviews table with optional reference to videos
+// Reviews table with required reference to videos
 export const reviews = pgTable('reviews', {
   id: serial('id').primaryKey(),
-  videoId: integer('video_id').references(() => videos.id),
-  title: varchar('title', { length: 255 }).notNull(),
-  description: text('description').notNull(),
+  videoId: integer('video_id').notNull().references(() => videos.id), // Make videoId required
+  title: varchar('title', { length: 255 }),  // Make title optional initially
+  description: text('description'),          // Make description optional initially
   pros: jsonb('pros'),
   cons: jsonb('cons'),
   altLinks: jsonb('alt_links'),
   tags: jsonb('tags'),
-  status: varchar('status', { length: 50 }).notNull().default('draft'),
+  status: varchar('status', { length: 50 }).notNull().default('video_uploaded'),
   statusHistory: jsonb('status_history').default([]), // Track status changes
   isVideoReady: boolean('is_video_ready').default(false),
   publishedAt: timestamp('published_at'), // When the review was published

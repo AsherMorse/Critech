@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import ReviewsService, { CreateReviewDto, UpdateReviewDto } from '../services/reviews.service'
+import ReviewsService, { CreateReviewFromVideoDto, UpdateReviewDto } from '../services/reviews.service'
 import { BaseController } from './base.controller'
 import { ApiError } from '../middleware/error-handler'
 
@@ -7,17 +7,17 @@ class ReviewsController extends BaseController {
   constructor() {
     super()
     // Bind methods to maintain correct 'this' context
-    this.createDraft = this.createDraft.bind(this)
+    this.createFromVideo = this.createFromVideo.bind(this)
     this.getAll = this.getAll.bind(this)
     this.getById = this.getById.bind(this)
     this.update = this.update.bind(this)
     this.delete = this.delete.bind(this)
   }
 
-  // Create a draft review
-  createDraft = this.handleAsync(async (req: Request<{}, any, CreateReviewDto>, res: Response) => {
-    this.validateRequiredFields(req.body, ['title', 'description'])
-    const review = await ReviewsService.createDraft(req.body)
+  // Create a review from uploaded video
+  createFromVideo = this.handleAsync(async (req: Request<{}, any, CreateReviewFromVideoDto>, res: Response) => {
+    this.validateRequiredFields(req.body, ['videoId'])
+    const review = await ReviewsService.createFromVideo(req.body)
     res.status(201).json(review)
   })
 

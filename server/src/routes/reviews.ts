@@ -1,13 +1,13 @@
 import { Router } from 'express'
 import ReviewsController from '../controllers/reviews.controller'
-import { CreateReviewDto, UpdateReviewDto } from '../services/reviews.service'
+import { CreateReviewFromVideoDto, UpdateReviewDto } from '../services/reviews.service'
 import { Request, Response, NextFunction } from 'express'
 
 const router = Router()
 
-// Create a draft review
-router.post('/draft', (req: Request<{}, any, CreateReviewDto>, res: Response, next: NextFunction) => {
-  return ReviewsController.createDraft(req, res, next)
+// Create a review from uploaded video
+router.post('/from-video', (req: Request<{}, any, CreateReviewFromVideoDto>, res: Response, next: NextFunction) => {
+  return ReviewsController.createFromVideo(req, res, next)
 })
 
 // Get all reviews

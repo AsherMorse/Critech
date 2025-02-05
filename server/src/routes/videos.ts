@@ -4,6 +4,11 @@ import { Request, Response, NextFunction } from 'express'
 
 const router = Router()
 
+// Create a video record
+router.post('/', (req: Request, res: Response, next: NextFunction) => {
+  return VideosController.createVideo(req, res, next)
+})
+
 // Get upload signature for Cloudinary
 router.get('/signature', (req: Request, res: Response, next: NextFunction) => {
   return VideosController.getUploadSignature(req, res, next)
