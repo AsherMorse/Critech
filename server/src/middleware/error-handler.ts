@@ -17,7 +17,11 @@ export const errorHandler: ErrorRequestHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  console.error('Error:', err)
+  console.error('🔥 Error in request:')
+  console.error('- URL:', req.url)
+  console.error('- Method:', req.method)
+  console.error('- Headers:', req.headers)
+  console.error('- Error:', err)
 
   if (err instanceof ApiError) {
     res.status(err.statusCode).json({

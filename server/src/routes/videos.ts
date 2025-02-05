@@ -8,6 +8,17 @@ const upload = multer({ storage: multer.memoryStorage() })
 
 // Direct upload endpoint
 router.post('/upload', upload.single('video'), (req: Request, res: Response, next: NextFunction) => {
+  console.log('📝 Received upload request:')
+  console.log('- Headers:', req.headers)
+  console.log('- File:', req.file ? {
+    fieldname: req.file.fieldname,
+    originalname: req.file.originalname,
+    mimetype: req.file.mimetype,
+    size: req.file.size
+  } : 'No file received')
+  console.log('- Body:', req.body)
+  console.log('- URL:', req.url)
+  console.log('- Method:', req.method)
   return VideosController.uploadVideo(req, res, next)
 })
 
