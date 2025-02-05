@@ -50,12 +50,6 @@ export default function CreateReviewPage() {
       const xhr = new XMLHttpRequest()
       const apiUrl = '/api/videos/upload'
       const fullUrl = import.meta.env.VITE_API_URL + apiUrl
-      console.log('🚀 Making API call to:', fullUrl)
-      console.log('📦 File details:', {
-        name: file.name,
-        type: file.type,
-        size: (file.size / (1024 * 1024)).toFixed(2) + ' MB'
-      })
 
       xhr.open('POST', fullUrl, true)
       xhr.setRequestHeader('Accept', 'application/json')
@@ -65,19 +59,13 @@ export default function CreateReviewPage() {
           // Upload is 50% of the total progress
           const progress = Math.round((event.loaded * 50) / event.total)
           setUploadProgress(progress)
-          console.log(`📤 Upload progress: ${progress}%`)
         }
       }
 
       xhr.onload = () => {
         try {
-          console.log('📥 Raw response:', xhr.responseText)
-          console.log('🔢 Response status:', xhr.status)
-          console.log('📋 Response headers:', xhr.getAllResponseHeaders())
-
           // Handle empty response
           if (!xhr.responseText) {
-            console.error('Empty response received')
             setError('Server returned an empty response. Please try again.')
             setIsUploading(false)
             setUploadProgress(0)
@@ -86,7 +74,6 @@ export default function CreateReviewPage() {
 
           // Handle 405 Method Not Allowed specifically
           if (xhr.status === 405) {
-            console.error('Method not allowed error')
             setError('Server configuration error: Upload method not allowed. Please contact support.')
             setIsUploading(false)
             setUploadProgress(0)
@@ -98,7 +85,6 @@ export default function CreateReviewPage() {
           if (xhr.status === 201) {
             // Set to 100% when complete
             setUploadProgress(100)
-            console.log('Upload successful:', response)
             
             // Wait a moment to show 100% before navigating
             setTimeout(() => {
@@ -106,14 +92,11 @@ export default function CreateReviewPage() {
             }, 500)
           } else {
             const errorMessage = response.error || 'Upload failed. Please try again.'
-            console.error('Upload failed:', response)
             setError(errorMessage)
             setIsUploading(false)
             setUploadProgress(0)
           }
         } catch (parseError) {
-          console.error('Error parsing response:', parseError)
-          console.error('Response text:', xhr.responseText)
           setError('Server response error. Please try again.')
           setIsUploading(false)
           setUploadProgress(0)
@@ -128,7 +111,6 @@ export default function CreateReviewPage() {
 
       xhr.send(formData)
     } catch (err) {
-      console.error('Upload error:', err)
       setError('Failed to upload video. Please try again.')
       setIsUploading(false)
       setUploadProgress(0)
