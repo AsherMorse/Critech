@@ -144,6 +144,7 @@ export const ensureUploadPresets = async () => {
         unique_filename: true,
         auto_tagging: true,
         allowed_origins: ALLOWED_ORIGINS,
+        unsigned: true, // Enable unsigned uploads
         notification_url: `${process.env.SERVER_URL}/api/videos/webhook`,
         eager: [
           VIDEO_PROFILES.HLS,    // HLS streaming

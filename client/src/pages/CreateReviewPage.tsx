@@ -1,6 +1,7 @@
-import { Box, TextField, Button, Typography, useMediaQuery, Paper, ThemeProvider, createTheme } from '@mui/material'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Box, Typography, Paper, ThemeProvider, createTheme, CircularProgress } from '@mui/material'
+import { CloudUpload } from '@mui/icons-material'
 
 const darkTheme = createTheme({
   palette: {
@@ -18,15 +19,112 @@ const darkTheme = createTheme({
 })
 
 export default function CreateReviewPage() {
-  const isMobile = useMediaQuery('(max-width:600px)')
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
   const navigate = useNavigate()
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleUpload = async (file: File) => {
+    if (!file) return
+
+    // Validate file type
+    if (!['video/mp4', 'video/quicktime', 'video/x-msvideo'].includes(file.type)) {
+      setError('Please select a valid video file (MP4, MOV, or AVI)')
+      return
+    }
+
+    // Validate file size (100MB)
+    if (file.size > 100 * 1024 * 1024) {
+      setError('File size must be less than 100MB')
+      return
+    }
+
+    setIsUploading(true)
+    setError(null)
+    setUploadProgress(0)
+
+    try {
+      const formData = new FormData()
+      formData.append('video', file)
+
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', '/api/videos/upload', true)
+      xhr.setRequestHeader('Accept', 'application/json')
+      
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          // Upload is 50% of the total progress
+          const progress = Math.round((event.loaded * 50) / event.total)
+          setUploadProgress(progress)
+        }
+      }
+
+      xhr.onload = () => {
+        try {
+          console.log('Raw response:', xhr.responseText)
+          console.log('Response status:', xhr.status)
+          console.log('Response headers:', xhr.getAllResponseHeaders())
+
+          // Handle empty response
+          if (!xhr.responseText) {
+            console.error('Empty response received')
+            setError('Server returned an empty response. Please try again.')
+            setIsUploading(false)
+            setUploadProgress(0)
+            return
+          }
+
+          const response = JSON.parse(xhr.responseText)
+          
+          if (xhr.status === 201) {
+            // Set to 100% when complete
+            setUploadProgress(100)
+            console.log('Upload successful:', response)
+            
+            // Wait a moment to show 100% before navigating
+            setTimeout(() => {
+              navigate('/dashboard')
+            }, 500)
+          } else {
+            const errorMessage = response.error || 'Upload failed. Please try again.'
+            console.error('Upload failed:', response)
+            setError(errorMessage)
+            setIsUploading(false)
+            setUploadProgress(0)
+          }
+        } catch (parseError) {
+          console.error('Error parsing response:', parseError)
+          console.error('Response text:', xhr.responseText)
+          setError('Server response error. Please try again.')
+          setIsUploading(false)
+          setUploadProgress(0)
+        }
+      }
+
+      xhr.onerror = () => {
+        setError('Network error. Please check your connection and try again.')
+        setIsUploading(false)
+        setUploadProgress(0)
+      }
+
+      xhr.send(formData)
+    } catch (err) {
+      console.error('Upload error:', err)
+      setError('Failed to upload video. Please try again.')
+      setIsUploading(false)
+      setUploadProgress(0)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
-    // TODO: Handle review submission
-    console.log({ title, description })
+    const file = e.dataTransfer.files[0]
+    if (file) handleUpload(file)
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) handleUpload(file)
   }
 
   return (
@@ -35,105 +133,112 @@ export default function CreateReviewPage() {
         sx={{ 
           minHeight: '100vh',
           bgcolor: 'background.default',
-          overflow: 'auto'
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 2
         }}
       >
-        <Box 
-          component="form" 
-          onSubmit={handleSubmit}
-          sx={{ 
+        <Paper
+          elevation={2}
+          sx={{
             width: '100%',
             maxWidth: '600px',
-            mx: 'auto',
-            p: isMobile ? 2 : 4,
-            boxSizing: 'border-box'
+            p: 4,
+            borderRadius: '16px',
+            bgcolor: 'background.paper'
           }}
         >
-          <Paper
-            elevation={2}
-            sx={{
-              p: isMobile ? 3 : 4,
-              borderRadius: isMobile ? '16px' : '8px',
-              bgcolor: 'background.paper'
-            }}
+          <Typography 
+            variant="h5" 
+            gutterBottom 
+            sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-              <Button
-                onClick={() => navigate(-1)}
-                sx={{ 
-                  mr: 2,
-                  color: 'text.secondary',
-                  '&:hover': { bgcolor: 'transparent' }
-                }}
-              >
-                Cancel
-              </Button>
-              <Typography 
-                variant={isMobile ? "h5" : "h4"} 
-                sx={{ fontWeight: 600 }}
-              >
-                Create Review
-              </Typography>
-            </Box>
+            Upload Video
+          </Typography>
 
-            <TextField
-              label="Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              fullWidth
-              required
-              sx={{ mb: 3 }}
-              InputProps={{
-                sx: {
-                  borderRadius: '8px',
-                  '& .MuiOutlinedInput-input': {
-                    fontSize: isMobile ? '1rem' : '1.1rem',
-                    p: isMobile ? '14px' : '16px'
-                  }
-                }
-              }}
-            />
-
-            <TextField
-              label="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              fullWidth
-              required
-              multiline
-              rows={6}
-              sx={{ mb: 4 }}
-              InputProps={{
-                sx: {
-                  borderRadius: '8px',
-                  '& .MuiOutlinedInput-input': {
-                    fontSize: isMobile ? '1rem' : '1.1rem',
-                    lineHeight: '1.5'
-                  }
-                }
-              }}
-            />
-
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              size="large"
+          <label htmlFor="video-upload">
+            <Box
               sx={{
-                py: 1.5,
-                borderRadius: '8px',
-                fontSize: isMobile ? '1rem' : '1.1rem',
-                textTransform: 'none',
-                bgcolor: 'primary.dark',
+                border: '2px dashed',
+                borderColor: error ? 'error.main' : 'primary.main',
+                borderRadius: '12px',
+                p: 4,
+                mb: 2,
+                textAlign: 'center',
+                cursor: isUploading ? 'default' : 'pointer',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '200px',
                 '&:hover': {
-                  bgcolor: 'primary.main'
+                  borderColor: error ? 'error.main' : 'primary.light',
+                  bgcolor: error ? 'error.dark' : 'rgba(30, 136, 229, 0.04)'
                 }
               }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
             >
-              Create Review
-            </Button>
-          </Paper>
-        </Box>
+              <input
+                id="video-upload"
+                type="file"
+                accept="video/mp4,video/quicktime,video/x-msvideo"
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+                disabled={isUploading}
+              />
+
+              {isUploading ? (
+                <>
+                  <CircularProgress
+                    variant="determinate"
+                    value={uploadProgress}
+                    size={60}
+                    thickness={4}
+                    sx={{ mb: 2 }}
+                  />
+                  <Typography variant="h6" gutterBottom>
+                    Uploading... {uploadProgress}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Please don't close this window
+                  </Typography>
+                </>
+              ) : (
+                <>
+                  <CloudUpload 
+                    sx={{ 
+                      fontSize: 48, 
+                      color: error ? 'error.main' : 'primary.main', 
+                      mb: 2 
+                    }} 
+                  />
+                  <Typography variant="h6" gutterBottom>
+                    Drag and drop your video here
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    or click to select a file
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Supported formats: MP4, MOV, AVI (max 100MB)
+                  </Typography>
+                </>
+              )}
+            </Box>
+          </label>
+
+          {error && (
+            <Typography 
+              color="error" 
+              variant="body2" 
+              sx={{ textAlign: 'center', mt: 2 }}
+            >
+              {error}
+            </Typography>
+          )}
+        </Paper>
       </Box>
     </ThemeProvider>
   )

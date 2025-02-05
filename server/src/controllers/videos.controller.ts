@@ -3,7 +3,10 @@ import { BaseController } from './base.controller'
 import { ApiError } from '../middleware/error-handler'
 import cloudinary, { UPLOAD_PRESETS } from '../config/cloudinary'
 import crypto from 'crypto'
-import VideosService from '../services/videos.service'
+import videosService from '../services/videos.service'
+import reviewsService from '../services/reviews.service'
+import { CloudinaryNotification, CloudinaryUploadResponse } from '../types/cloudinary'
+import { Readable } from 'stream'
 
 interface CreateVideoDto {
   cloudinaryId: string
@@ -31,11 +34,69 @@ class VideosController extends BaseController {
     this.createVideo = this.createVideo.bind(this)
     this.getUploadSignature = this.getUploadSignature.bind(this)
     this.handleWebhook = this.handleWebhook.bind(this)
+    this.uploadVideo = this.uploadVideo.bind(this)
   }
+
+  // Upload video and create records
+  uploadVideo = this.handleAsync(async (req: Request, res: Response) => {
+    if (!req.file) {
+      throw new ApiError(400, 'No video file provided')
+    }
+
+    try {
+      // Create a readable stream from the buffer
+      const stream = Readable.from(req.file.buffer)
+
+      // Upload to Cloudinary
+      const uploadResponse = await new Promise<CloudinaryUploadResponse>((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            resource_type: 'video',
+            folder: 'reviews',
+            upload_preset: UPLOAD_PRESETS.REVIEW_VIDEO,
+          },
+          (error, result) => {
+            if (error) reject(error)
+            else resolve(result as unknown as CloudinaryUploadResponse)
+          }
+        )
+
+        stream.pipe(uploadStream)
+      })
+
+      // Create video record
+      const video = await videosService.createVideo({
+        notification_type: 'upload',
+        asset_id: uploadResponse.asset_id,
+        public_id: uploadResponse.public_id,
+        version: uploadResponse.version,
+        width: uploadResponse.width,
+        height: uploadResponse.height,
+        format: uploadResponse.format,
+        resource_type: 'video',
+        created_at: new Date().toISOString(),
+        bytes: uploadResponse.bytes,
+        type: 'upload',
+        url: uploadResponse.url,
+        secure_url: uploadResponse.secure_url
+      })
+
+      // Create initial review entry
+      const review = await reviewsService.createFromVideo({ videoId: video.id })
+
+      res.status(201).json({
+        message: 'Video uploaded successfully',
+        video,
+        review
+      })
+    } catch (error) {
+      throw new ApiError(500, 'Failed to upload video', error)
+    }
+  })
 
   // Create a video record manually
   createVideo = this.handleAsync(async (req: Request<{}, any, CreateVideoDto>, res: Response) => {
-    const video = await VideosService.createVideo({
+    const video = await videosService.createVideo({
       notification_type: 'upload',
       asset_id: req.body.cloudinaryId,
       public_id: req.body.publicId,
@@ -75,37 +136,48 @@ class VideosController extends BaseController {
 
   // Handle Cloudinary webhook notifications
   handleWebhook = this.handleAsync(async (req: Request, res: Response) => {
-    // Verify webhook signature
-    const signature = req.headers['x-cld-signature']
-    const timestamp = req.headers['x-cld-timestamp']
-    if (!this.verifyWebhookSignature(signature as string, timestamp as string, req.body)) {
-      throw new ApiError(401, 'Invalid webhook signature')
+    const notification = req.body as CloudinaryNotification
+
+    // Only process video notifications
+    if (notification.resource_type !== 'video') {
+      throw new ApiError(400, 'Invalid resource type')
     }
 
-    const notification = req.body
+    let video
 
-    try {
-      // Handle different notification types
-      switch (notification.notification_type) {
-        case 'upload':
-          // Create new video record on initial upload
-          await VideosService.createVideo(notification)
-          break
-
-        case 'eager':
-          // Update video status when processing is complete
-          await VideosService.updateVideoStatus(notification)
-          break
-
-        default:
-          console.log('Unhandled notification type:', notification.notification_type)
-      }
-
-      res.json({ received: true })
-    } catch (error: any) {
-      console.error('Error processing webhook:', error)
-      throw new ApiError(500, 'Error processing webhook: ' + error.message)
+    // Handle initial upload notification
+    if (notification.notification_type === 'upload') {
+      video = await videosService.createVideo(notification)
+      
+      // Create initial review entry
+      const review = await reviewsService.createFromVideo({ videoId: video.id })
+      
+      res.json({ 
+        message: 'Video upload processed',
+        video,
+        review
+      })
+      return
     }
+
+    // Handle video processing completion
+    if (notification.notification_type === 'eager') {
+      video = await videosService.updateVideoStatus(notification)
+      
+      // Find associated review and mark video as ready
+      const review = await reviewsService.updateReviewByVideoId(video.id, {
+        isVideoReady: true
+      })
+
+      res.json({ 
+        message: 'Video processing completed',
+        video,
+        review
+      })
+      return
+    }
+
+    throw new ApiError(400, 'Unsupported notification type')
   })
 
   private generateSignature(params: Record<string, any>): string {

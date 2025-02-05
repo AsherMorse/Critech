@@ -108,6 +108,19 @@ class ReviewsService {
     }
     return review
   }
+
+  // Update review by video ID
+  async updateReviewByVideoId(videoId: number, data: Partial<typeof reviews.$inferInsert>) {
+    const [updated] = await db.update(reviews)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(reviews.videoId, videoId))
+      .returning()
+
+    return updated
+  }
 }
 
 export default new ReviewsService() 

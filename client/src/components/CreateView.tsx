@@ -38,7 +38,7 @@ export default function CreateView() {
           boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
         }}
       >
-        Create Review
+        Upload Video
       </Button>
     </Box>
   )
