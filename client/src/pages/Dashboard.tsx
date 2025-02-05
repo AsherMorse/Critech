@@ -1,8 +1,9 @@
 import { Box, AppBar, Toolbar, Typography, Paper, ThemeProvider, createTheme, BottomNavigation, BottomNavigationAction } from '@mui/material'
-import { AccountCircle, Home } from '@mui/icons-material'
+import { AccountCircle, Home, Add } from '@mui/icons-material'
 import { useState } from 'react'
 import HomeView from '../components/HomeView'
 import ProfileView from '../components/ProfileView'
+import CreateView from '../components/CreateView'
 
 const darkTheme = createTheme({
   palette: {
@@ -24,6 +25,11 @@ const navigationTabs = [
     label: 'Home',
     icon: <Home />,
     component: <HomeView />
+  },
+  {
+    label: 'Create',
+    icon: <Add />,
+    component: <CreateView />
   },
   {
     label: 'Profile', 
