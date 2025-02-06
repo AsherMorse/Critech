@@ -13,7 +13,8 @@ app.use(cors({
   origin: ['https://critech.ashermorse.org', 'http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
-  credentials: true
+  credentials: true,
+  exposedHeaders: ['Content-Length', 'Content-Type']
 }));
 
 app.use(express.json());
