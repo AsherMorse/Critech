@@ -35,6 +35,8 @@ class ReviewsService {
       .where(
         sql`${reviews.status} != 'deleted' 
       AND ${reviews.status} != 'archived'
+      AND ${reviews.title} IS NOT NULL
+      AND ${reviews.title} != ''
       ${ownerId ? sql`AND ${reviews.ownerId} = ${ownerId}` : sql``}`
       )
 
@@ -73,6 +75,8 @@ class ReviewsService {
         .where(
           sql`${reviews.status} != 'deleted' 
         AND ${reviews.status} != 'archived'
+        AND ${reviews.title} IS NOT NULL
+        AND ${reviews.title} != ''
         ${ownerId ? sql`AND ${reviews.ownerId} = ${ownerId}` : sql``}
         ${lastId ? sql`AND ${reviews.id} < ${lastId}` : sql``}`
         )
@@ -136,6 +140,8 @@ class ReviewsService {
         .where(
           sql`${reviews.status} != 'deleted' 
         AND ${reviews.status} != 'archived'
+        AND ${reviews.title} IS NOT NULL
+        AND ${reviews.title} != ''
         ${ownerId ? sql`AND ${reviews.ownerId} = ${ownerId}` : sql``}`
         )
         .orderBy(desc(reviews.createdAt))
