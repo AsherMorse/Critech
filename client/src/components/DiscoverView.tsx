@@ -52,28 +52,23 @@ export default function DiscoverView() {
                 })
 
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => null)
-                    console.error('Response not OK:', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        errorData
-                    })
                     throw new Error(`HTTP error! status: ${response.status}`)
                 }
 
-                const rawData = await response.json()
-                console.log('Raw API response:', rawData)
-
-                // Handle both array and {data: array} formats
-                const reviewsData = Array.isArray(rawData) ? rawData : rawData.data
-
-                if (!Array.isArray(reviewsData)) {
-                    console.error('Invalid reviews data format:', reviewsData)
-                    throw new Error('Invalid response format')
+                let reviewsData
+                try {
+                    const text = await response.text() // Get response as text first
+                    console.log('Raw response:', text) // Debug log
+                    const data = text ? JSON.parse(text) : []
+                    reviewsData = Array.isArray(data) ? data : data.data || []
+                } catch (parseError) {
+                    console.error('Error parsing response:', parseError)
+                    reviewsData = []
                 }
 
                 // Show all active reviews (not deleted or archived)
-                const activeReviews = reviewsData.filter(review =>
+                const activeReviews = reviewsData.filter((review: Review) =>
+                    review &&
                     review.status !== 'deleted' &&
                     review.status !== 'archived' &&
                     (review.title || review.description) // Only show reviews with content
