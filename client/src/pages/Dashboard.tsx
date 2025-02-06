@@ -1,7 +1,8 @@
 import { Box, AppBar, Toolbar, Typography, Paper, ThemeProvider, createTheme, BottomNavigation, BottomNavigationAction } from '@mui/material'
-import { AccountCircle, Home, Add } from '@mui/icons-material'
+import { AccountCircle, Explore, Add, LibraryBooks } from '@mui/icons-material'
 import { useState } from 'react'
-import HomeView from '../components/HomeView'
+import DiscoverView from '../components/DiscoverView'
+import LibraryView from '../components/LibraryView'
 import ProfileView from '../components/ProfileView'
 import CreateView from '../components/CreateView'
 
@@ -22,9 +23,14 @@ const darkTheme = createTheme({
 
 const navigationTabs = [
   {
-    label: 'Home',
-    icon: <Home />,
-    component: <HomeView />
+    label: 'Discover',
+    icon: <Explore />,
+    component: <DiscoverView />
+  },
+  {
+    label: 'Library',
+    icon: <LibraryBooks />,
+    component: <LibraryView />
   },
   {
     label: 'Create',
@@ -32,7 +38,7 @@ const navigationTabs = [
     component: <CreateView />
   },
   {
-    label: 'Profile', 
+    label: 'Profile',
     icon: <AccountCircle />,
     component: <ProfileView />
   }
@@ -54,9 +60,9 @@ export default function Dashboard() {
         </AppBar>
 
         {/* Main Content */}
-        <Box sx={{ 
-          flex: 1, 
-          display: 'flex', 
+        <Box sx={{
+          flex: 1,
+          display: 'flex',
           flexDirection: 'column',
           pb: 8 // Add padding to bottom to account for tab bar
         }}>
@@ -64,9 +70,9 @@ export default function Dashboard() {
         </Box>
 
         {/* Bottom Navigation Bar */}
-        <Paper 
+        <Paper
           elevation={8}
-          sx={{ 
+          sx={{
             position: 'fixed',
             bottom: 0,
             left: 0,
@@ -92,11 +98,11 @@ export default function Dashboard() {
             }}
           >
             {navigationTabs.map((tab) => (
-              <BottomNavigationAction 
+              <BottomNavigationAction
                 key={tab.label}
-                label={tab.label} 
+                label={tab.label}
                 icon={tab.icon}
-                disableRipple 
+                disableRipple
               />
             ))}
           </BottomNavigation>

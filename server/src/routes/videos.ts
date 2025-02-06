@@ -17,6 +17,11 @@ router.use((req: Request, res: Response, next: NextFunction) => {
   return (verifyAuth as RequestHandler)(req, res, next)
 })
 
+// Get video by ID
+router.get('/:id', (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+  return VideosController.getVideoById(req, res, next)
+})
+
 // Direct upload endpoint
 router.post('/upload', upload.single('video'), (req: Request, res: Response, next: NextFunction) => {
   return VideosController.uploadVideo(req, res, next)

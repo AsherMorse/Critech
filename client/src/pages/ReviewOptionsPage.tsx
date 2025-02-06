@@ -171,7 +171,7 @@ export default function ReviewOptionsPage() {
                 throw new Error('Invalid response format from server')
             }
 
-            navigate(`/review/${data.id}`)
+            navigate(`/reviews/${data.id}`)
         } catch (error) {
             console.error('Error creating review:', error)
             alert(`Error creating review: ${error instanceof Error ? error.message : 'Unknown error'}`)

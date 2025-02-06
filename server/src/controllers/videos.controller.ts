@@ -41,7 +41,23 @@ class VideosController extends BaseController {
     this.uploadVideo = this.uploadVideo.bind(this)
     this.handleUploadComplete = this.handleUploadComplete.bind(this)
     this.handleDirectUpload = this.handleDirectUpload.bind(this)
+    this.getVideoById = this.getVideoById.bind(this)
   }
+
+  // Get video by ID
+  getVideoById = this.handleAsync(async (req: Request<{ id: string }>, res: Response) => {
+    const id = this.validateId(req.params.id)
+
+    const video = await db.query.videos.findFirst({
+      where: eq(videos.id, id)
+    })
+
+    if (!video) {
+      throw new ApiError(404, 'Video not found')
+    }
+
+    res.json(video)
+  })
 
   // Upload video and create records
   uploadVideo = this.handleAsync(async (req: Request, res: Response) => {
