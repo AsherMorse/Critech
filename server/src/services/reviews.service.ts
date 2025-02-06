@@ -1,6 +1,6 @@
 import { db } from '../db/client'
-import { reviews } from '../db/schema'
-import { eq } from 'drizzle-orm'
+import { reviews, videos } from '../db/schema'
+import { eq, desc, sql, and, lt } from 'drizzle-orm'
 import type { ReviewStatus } from '../db/schema'
 
 // DTO for creating a review from a video
@@ -26,6 +26,143 @@ export interface UpdateReviewDto {
 }
 
 class ReviewsService {
+  // Get total count of reviews
+  async getReviewCount(ownerId?: string) {
+    const result = await db.select({
+      count: sql<number>`count(*)`
+    })
+      .from(reviews)
+      .where(
+        sql`${reviews.status} != 'deleted' 
+      AND ${reviews.status} != 'archived'
+      ${ownerId ? sql`AND ${reviews.ownerId} = ${ownerId}` : sql``}`
+      )
+
+    return result[0].count
+  }
+
+  // Get reviews with pagination
+  async getReviewsPage(pageSize: number = 5, lastId?: number, ownerId?: string) {
+    try {
+      console.time(`getReviewsPage-${lastId || 'initial'}`)
+
+      // Build base query with join
+      const query = db.select({
+        id: reviews.id,
+        videoId: reviews.videoId,
+        title: reviews.title,
+        description: reviews.description,
+        pros: reviews.pros,
+        cons: reviews.cons,
+        altLinks: reviews.altLinks,
+        tags: reviews.tags,
+        status: reviews.status,
+        statusHistory: reviews.statusHistory,
+        isVideoReady: reviews.isVideoReady,
+        publishedAt: reviews.publishedAt,
+        archivedAt: reviews.archivedAt,
+        createdAt: reviews.createdAt,
+        updatedAt: reviews.updatedAt,
+        video: sql<any>`json_build_object(
+          'videoUrl', ${videos.videoUrl},
+          'thumbnailUrl', ${videos.thumbnailUrl}
+        )`
+      })
+        .from(reviews)
+        .leftJoin(videos, eq(reviews.videoId, videos.id))
+        .where(
+          sql`${reviews.status} != 'deleted' 
+        AND ${reviews.status} != 'archived'
+        ${ownerId ? sql`AND ${reviews.ownerId} = ${ownerId}` : sql``}
+        ${lastId ? sql`AND ${reviews.id} < ${lastId}` : sql``}`
+        )
+        .orderBy(desc(reviews.id))
+        .limit(pageSize)
+
+      // Execute query
+      const results = await query
+
+      // Transform results to match expected format
+      const transformedResults = results.map(result => ({
+        ...result,
+        video: result.video.videoUrl ? result.video : undefined
+      }))
+
+      console.timeEnd(`getReviewsPage-${lastId || 'initial'}`)
+      console.log('Page results:', {
+        lastId: lastId || 'initial',
+        count: transformedResults.length,
+        withVideo: transformedResults.filter(r => !!r.video).length,
+        withThumbnail: transformedResults.filter(r => !!r.video?.thumbnailUrl).length,
+        ids: transformedResults.map(r => r.id)
+      })
+
+      return transformedResults
+    } catch (error) {
+      console.error('Error in getReviewsPage:', error)
+      throw error
+    }
+  }
+
+  // Get all reviews (legacy method)
+  async getAllReviews(ownerId?: string) {
+    try {
+      console.time('getAllReviews')
+
+      // Build base query with join
+      const query = db.select({
+        id: reviews.id,
+        videoId: reviews.videoId,
+        title: reviews.title,
+        description: reviews.description,
+        pros: reviews.pros,
+        cons: reviews.cons,
+        altLinks: reviews.altLinks,
+        tags: reviews.tags,
+        status: reviews.status,
+        statusHistory: reviews.statusHistory,
+        isVideoReady: reviews.isVideoReady,
+        publishedAt: reviews.publishedAt,
+        archivedAt: reviews.archivedAt,
+        createdAt: reviews.createdAt,
+        updatedAt: reviews.updatedAt,
+        video: sql<any>`json_build_object(
+          'videoUrl', ${videos.videoUrl},
+          'thumbnailUrl', ${videos.thumbnailUrl}
+        )`
+      })
+        .from(reviews)
+        .leftJoin(videos, eq(reviews.videoId, videos.id))
+        .where(
+          sql`${reviews.status} != 'deleted' 
+        AND ${reviews.status} != 'archived'
+        ${ownerId ? sql`AND ${reviews.ownerId} = ${ownerId}` : sql``}`
+        )
+        .orderBy(desc(reviews.createdAt))
+
+      // Execute query
+      const results = await query
+
+      // Transform results to match expected format
+      const transformedResults = results.map(result => ({
+        ...result,
+        video: result.video.videoUrl ? result.video : undefined
+      }))
+
+      console.timeEnd('getAllReviews')
+      console.log('Query results:', {
+        total: transformedResults.length,
+        withVideo: transformedResults.filter(r => !!r.video).length,
+        withThumbnail: transformedResults.filter(r => !!r.video?.thumbnailUrl).length
+      })
+
+      return transformedResults
+    } catch (error) {
+      console.error('Error in getAllReviews:', error)
+      throw error
+    }
+  }
+
   // Create initial review entry after video upload
   async createFromVideo(data: CreateReviewFromVideoDto) {
     const [review] = await db.insert(reviews).values({
@@ -88,24 +225,41 @@ class ReviewsService {
     return updated
   }
 
-  // Get all reviews
-  async getAllReviews(ownerId?: string) {
-    if (ownerId) {
-      return await db.query.reviews.findMany({
-        where: eq(reviews.ownerId, ownerId),
-        orderBy: (reviews, { desc }) => [desc(reviews.createdAt)]
-      })
-    }
-    return await db.query.reviews.findMany({
-      orderBy: (reviews, { desc }) => [desc(reviews.createdAt)]
-    })
-  }
-
-  // Get a review by ID
+  // Get a single review with video data
   async getReviewById(id: number) {
-    return await db.query.reviews.findFirst({
-      where: eq(reviews.id, id)
+    const result = await db.select({
+      id: reviews.id,
+      videoId: reviews.videoId,
+      title: reviews.title,
+      description: reviews.description,
+      pros: reviews.pros,
+      cons: reviews.cons,
+      altLinks: reviews.altLinks,
+      tags: reviews.tags,
+      status: reviews.status,
+      statusHistory: reviews.statusHistory,
+      isVideoReady: reviews.isVideoReady,
+      publishedAt: reviews.publishedAt,
+      archivedAt: reviews.archivedAt,
+      createdAt: reviews.createdAt,
+      updatedAt: reviews.updatedAt,
+      video: sql<any>`json_build_object(
+        'videoUrl', ${videos.videoUrl},
+        'thumbnailUrl', ${videos.thumbnailUrl}
+      )`
     })
+      .from(reviews)
+      .leftJoin(videos, eq(reviews.videoId, videos.id))
+      .where(eq(reviews.id, id))
+      .limit(1)
+
+    if (result.length === 0) return null
+
+    const review = result[0]
+    return {
+      ...review,
+      video: review.video.videoUrl ? review.video : undefined
+    }
   }
 
   // Delete a review

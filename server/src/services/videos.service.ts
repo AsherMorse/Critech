@@ -1,55 +1,26 @@
 import { db } from '../db/client'
 import { videos } from '../db/schema'
 import { eq } from 'drizzle-orm'
-
-interface CloudinaryNotification {
-  notification_type: string
-  asset_id: string
-  public_id: string
-  version: number
-  width: number
-  height: number
-  format: string
-  resource_type: string
-  created_at: string
-  bytes: number
-  type: string
-  url: string
-  secure_url: string
-  eager?: Array<{
-    transformation: string
-    width: number
-    height: number
-    bytes: number
-    format: string
-    url: string
-    secure_url: string
-  }>
-  status?: string
-  error?: {
-    message: string
-  }
-}
+import { CloudinaryNotification } from '../types/cloudinary'
 
 class VideosService {
   // Create a new video record
-  async createVideo(data: CloudinaryNotification) {
+  async createVideo(notification: CloudinaryNotification) {
     const [video] = await db.insert(videos).values({
-      cloudinaryId: data.asset_id,
-      publicId: data.public_id,
-      duration: 0, // Will be updated when processing is complete
-      videoUrl: data.secure_url,
-      status: 'processing',
+      cloudinaryId: notification.asset_id,
+      publicId: notification.public_id,
+      videoUrl: notification.secure_url,
+      thumbnailUrl: notification.thumbnailUrl,
       metadata: {
-        format: data.format,
+        format: notification.format,
         codec: null,
         bitRate: null,
-        width: data.width,
-        height: data.height,
+        width: notification.width,
+        height: notification.height,
         fps: null,
         audioCodec: null,
         audioFrequency: null,
-        aspectRatio: `${data.width}:${data.height}`,
+        aspectRatio: null,
         rotation: null,
         quality: null
       }
@@ -59,26 +30,26 @@ class VideosService {
   }
 
   // Update video status and metadata
-  async updateVideoStatus(data: CloudinaryNotification) {
+  async updateVideoStatus(notification: CloudinaryNotification) {
     const [video] = await db.update(videos)
       .set({
-        status: data.status === 'completed' ? 'ready' : 'error',
+        status: 'ready',
+        thumbnailUrl: notification.thumbnailUrl,
         metadata: {
-          format: data.format,
-          codec: null, // Add when available in notification
+          format: notification.format,
+          codec: null,
           bitRate: null,
-          width: data.width,
-          height: data.height,
+          width: notification.width,
+          height: notification.height,
           fps: null,
           audioCodec: null,
           audioFrequency: null,
-          aspectRatio: `${data.width}:${data.height}`,
+          aspectRatio: null,
           rotation: null,
           quality: null
-        },
-        updatedAt: new Date()
+        }
       })
-      .where(eq(videos.cloudinaryId, data.asset_id))
+      .where(eq(videos.cloudinaryId, notification.asset_id))
       .returning()
 
     return video

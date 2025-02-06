@@ -1,5 +1,5 @@
 export interface CloudinaryNotification {
-  notification_type: string
+  notification_type: 'upload' | 'eager'
   asset_id: string
   public_id: string
   version: number
@@ -12,6 +12,7 @@ export interface CloudinaryNotification {
   type: string
   url: string
   secure_url: string
+  thumbnailUrl?: string
   eager?: Array<{
     transformation: string
     width: number

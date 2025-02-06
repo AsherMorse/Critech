@@ -12,6 +12,12 @@ class ReviewsController extends BaseController {
     this.getById = this.getById.bind(this)
     this.update = this.update.bind(this)
     this.delete = this.delete.bind(this)
+    this.getReviews = this.getReviews.bind(this)
+    this.getReviewById = this.getReviewById.bind(this)
+    this.updateReview = this.updateReview.bind(this)
+    this.deleteReview = this.deleteReview.bind(this)
+    this.getReviewsPage = this.getReviewsPage.bind(this)
+    this.getReviewCount = this.getReviewCount.bind(this)
   }
 
   // Create a review from uploaded video
@@ -66,6 +72,70 @@ class ReviewsController extends BaseController {
 
     res.json({ message: 'Review deleted successfully' })
   })
+
+  // Get paginated reviews
+  getReviewsPage = this.handleAsync(async (req: Request, res: Response) => {
+    const pageSize = Math.max(1, Math.min(20, parseInt(req.query.pageSize as string) || 5))
+    const lastId = req.query.lastId ? parseInt(req.query.lastId as string) : undefined
+    const ownerId = req.query.ownerId as string
+
+    console.log('Pagination params:', {
+      pageSize,
+      lastId,
+      ownerId
+    })
+
+    const reviews = await ReviewsService.getReviewsPage(pageSize, lastId, ownerId)
+    res.json(reviews)
+  })
+
+  // Get total review count
+  getReviewCount = this.handleAsync(async (req: Request, res: Response) => {
+    const ownerId = req.query.ownerId as string
+    const count = await ReviewsService.getReviewCount(ownerId)
+    res.json({ count })
+  })
+
+  // Legacy get all reviews
+  getReviews = this.handleAsync(async (req: Request, res: Response) => {
+    const ownerId = req.query.ownerId as string
+    const reviews = await ReviewsService.getAllReviews(ownerId)
+    res.json(reviews)
+  })
+
+  // Get review by ID
+  getReviewById = this.handleAsync(async (req: Request<{ id: string }>, res: Response) => {
+    const id = this.validateId(req.params.id)
+    const review = await ReviewsService.getReviewById(id)
+
+    if (!review) {
+      throw new ApiError(404, 'Review not found')
+    }
+
+    res.json(review)
+  })
+
+  // Update review
+  updateReview = this.handleAsync(async (req: Request<{ id: string }>, res: Response) => {
+    const id = this.validateId(req.params.id)
+    const review = await ReviewsService.updateReview(id, req.body)
+    res.json(review)
+  })
+
+  // Delete review
+  deleteReview = this.handleAsync(async (req: Request<{ id: string }>, res: Response) => {
+    const id = this.validateId(req.params.id)
+    const review = await ReviewsService.deleteReview(id)
+    res.json(review)
+  })
+
+  protected validateId(id: string): number {
+    const numId = parseInt(id)
+    if (isNaN(numId)) {
+      throw new ApiError(400, 'Invalid ID format')
+    }
+    return numId
+  }
 }
 
 export default new ReviewsController() 

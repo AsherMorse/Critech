@@ -15,10 +15,14 @@ router.post('/from-video', (req: Request<{}, any, CreateReviewFromVideoDto>, res
   ReviewsController.createFromVideo(req, res, next)
 })
 
-// Get all reviews (optionally filtered by owner)
-router.get('/', (req: Request, res: Response, next: NextFunction) => {
-  ReviewsController.getAll(req, res, next)
-})
+// Get paginated reviews (must come before /:id route)
+router.get('/page', ReviewsController.getReviewsPage)
+
+// Get total review count
+router.get('/count', ReviewsController.getReviewCount)
+
+// Get all reviews (legacy)
+router.get('/', ReviewsController.getReviews)
 
 // Get a single review (no ownership verification needed)
 router.get('/:id', (req: Request<{ id: string }>, res: Response, next: NextFunction) => {

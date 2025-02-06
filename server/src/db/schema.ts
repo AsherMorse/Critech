@@ -1,4 +1,4 @@
-import { pgTable, serial, text, varchar, jsonb, timestamp, integer, foreignKey, boolean } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, varchar, jsonb, timestamp, integer, boolean } from 'drizzle-orm/pg-core'
 
 // Review status type
 export type ReviewStatus = 'video_uploaded' | 'draft' | 'in_review' | 'published' | 'archived' | 'deleted'
@@ -9,24 +9,25 @@ export const videos = pgTable('videos', {
   cloudinaryId: text('cloudinary_id').notNull(), // Cloudinary resource ID
   publicId: text('public_id').notNull(), // Cloudinary public ID for URLs
   duration: integer('duration'),
-  videoUrl: text('video_url'),
+  videoUrl: text('video_url').notNull(),
+  thumbnailUrl: text('thumbnail_url'),
   status: varchar('status', { length: 50 }).notNull().default('ready'), // Cloudinary handles processing
-  metadata: jsonb('metadata').default({
-    format: null,         // video format (mp4, webm, etc)
-    codec: null,          // video codec used
-    bitRate: null,        // video bitrate
-    width: null,          // video width
-    height: null,         // video height
-    fps: null,           // frames per second
-    audioCodec: null,     // audio codec
-    audioFrequency: null, // audio sample rate
-    aspectRatio: null,    // video aspect ratio
-    rotation: null,       // video rotation
-    quality: null        // quality score
-  }),
+  metadata: jsonb('metadata').$type<{
+    format: string
+    codec: string | null
+    bitRate: number | null
+    width: number | null
+    height: number | null
+    fps: number | null
+    audioCodec: string | null
+    audioFrequency: number | null
+    aspectRatio: string | null
+    rotation: number | null
+    quality: number | null
+  }>(),
   secure: boolean('secure').default(true), // Use HTTPS URLs
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow()
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
 
 // Reviews table with required reference to videos

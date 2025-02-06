@@ -169,7 +169,7 @@ export default function LibraryView() {
                                 <CardMedia
                                     component="img"
                                     height="200"
-                                    image={review.video?.thumbnailUrl || `https://img.youtube.com/vi/${review.videoId}/maxresdefault.jpg`}
+                                    image={review.video?.thumbnailUrl || ``}
                                     alt={review.title || 'Review thumbnail'}
                                     sx={{ objectFit: 'cover' }}
                                 />

@@ -12,11 +12,44 @@ import { db } from '../db/client'
 import { videos } from '../db/schema'
 import { eq } from 'drizzle-orm'
 
+// Helper function to generate thumbnail URL
+const generateThumbnailUrl = (publicId: string): string | undefined => {
+  if (!publicId) {
+    console.error('No public ID provided for thumbnail generation')
+    return undefined
+  }
+
+  console.log('Starting thumbnail generation for public ID:', publicId)
+  try {
+    // Generate a high-quality image thumbnail from the video
+    const thumbnailUrl = cloudinaryV2.url(publicId, {
+      resource_type: 'video',
+      format: 'jpg',
+      transformation: [
+        {
+          width: 640,          // Larger width for HD
+          height: 360,         // 16:9 aspect ratio
+          crop: 'fill',
+          quality: 'auto:best',// Best quality
+          fetch_format: 'auto',// Optimize format for browser
+          video_sampling: 1,   // Take screenshot from first second
+        }
+      ]
+    })
+    console.log('Successfully generated thumbnail URL:', thumbnailUrl)
+    return thumbnailUrl
+  } catch (error) {
+    console.error('Error generating thumbnail URL:', error)
+    return undefined
+  }
+}
+
 interface CreateVideoDto {
   cloudinaryId: string
   publicId: string
   duration: number
   videoUrl: string
+  thumbnailUrl?: string
   metadata: {
     format: string
     codec: string | null
@@ -67,10 +100,8 @@ class VideosController extends BaseController {
 
     try {
       console.log('Starting video upload process...')
-      // Create a readable stream from the buffer
       const stream = Readable.from(req.file.buffer)
 
-      // Upload to Cloudinary
       console.log('Uploading to Cloudinary...')
       const uploadResponse = await new Promise<CloudinaryUploadResponse>((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
@@ -78,13 +109,22 @@ class VideosController extends BaseController {
             resource_type: 'video',
             folder: 'reviews',
             upload_preset: UPLOAD_PRESETS.REVIEW_VIDEO,
+            eager: [
+              {
+                width: 320,
+                height: 180,
+                crop: 'fill',
+                format: 'jpg'
+              }
+            ],
+            eager_async: false
           },
           (error, result) => {
             if (error) {
               console.error('Cloudinary upload error:', error)
               reject(error)
             } else {
-              console.log('Cloudinary upload successful:', result?.public_id)
+              console.log('Cloudinary upload successful. Full response:', JSON.stringify(result, null, 2))
               resolve(result as unknown as CloudinaryUploadResponse)
             }
           }
@@ -93,8 +133,23 @@ class VideosController extends BaseController {
         stream.pipe(uploadStream)
       })
 
-      // Create video record
-      console.log('Creating video record...')
+      // Generate thumbnail URL
+      console.log('Generating thumbnail for uploaded video...')
+      console.log('Public ID from upload:', uploadResponse.public_id)
+      const thumbnailUrl = generateThumbnailUrl(uploadResponse.public_id)
+
+      if (!thumbnailUrl) {
+        console.warn('Failed to generate thumbnail URL, proceeding without thumbnail')
+      }
+
+      // Create video record with thumbnail
+      console.log('Creating video record with data:', {
+        cloudinaryId: uploadResponse.asset_id,
+        publicId: uploadResponse.public_id,
+        videoUrl: uploadResponse.secure_url,
+        thumbnailUrl
+      })
+
       const video = await videosService.createVideo({
         notification_type: 'upload',
         asset_id: uploadResponse.asset_id,
@@ -108,9 +163,14 @@ class VideosController extends BaseController {
         bytes: uploadResponse.bytes,
         type: 'upload',
         url: uploadResponse.url,
-        secure_url: uploadResponse.secure_url
+        secure_url: uploadResponse.secure_url,
+        thumbnailUrl
       })
-      console.log('Video record created:', video.id)
+      console.log('Video record created:', {
+        id: video.id,
+        thumbnailUrl: video.thumbnailUrl,
+        videoUrl: video.videoUrl
+      })
 
       // Create initial review entry
       console.log('Creating initial review entry...')
@@ -123,7 +183,11 @@ class VideosController extends BaseController {
         videoId: video.id,
         ownerId: req.user.id
       })
-      console.log('Review created:', review.id)
+      console.log('Review created:', {
+        id: review.id,
+        videoId: review.videoId,
+        ownerId: review.ownerId
+      })
 
       res.status(201).json({
         message: 'Video uploaded successfully',
@@ -183,22 +247,45 @@ class VideosController extends BaseController {
   // Handle Cloudinary webhook notifications
   handleWebhook = this.handleAsync(async (req: Request, res: Response) => {
     const notification = req.body as CloudinaryNotification
+    console.log('Received Cloudinary webhook notification:', {
+      type: notification.notification_type,
+      publicId: notification.public_id,
+      resourceType: notification.resource_type
+    })
 
-    // Only process video notifications
     if (notification.resource_type !== 'video') {
       throw new ApiError(400, 'Invalid resource type')
     }
 
     let video
 
-    // Handle initial upload notification
     if (notification.notification_type === 'upload') {
-      video = await videosService.createVideo(notification)
+      // Generate thumbnail URL for the uploaded video
+      console.log('Generating thumbnail for webhook upload...')
+      const thumbnailUrl = generateThumbnailUrl(notification.public_id)
 
-      // Create initial review entry with system user as owner
+      // Add thumbnail URL to the notification data
+      const notificationWithThumbnail = {
+        ...notification,
+        thumbnailUrl
+      }
+      console.log('Creating video record from webhook with thumbnail:', thumbnailUrl)
+
+      video = await videosService.createVideo(notificationWithThumbnail)
+      console.log('Video record created from webhook:', {
+        id: video.id,
+        thumbnailUrl: video.thumbnailUrl,
+        videoUrl: video.videoUrl
+      })
+
       const review = await reviewsService.createFromVideo({
         videoId: video.id,
-        ownerId: 'system' // Use system user for webhook-created reviews
+        ownerId: 'system'
+      })
+      console.log('Review created from webhook:', {
+        id: review.id,
+        videoId: review.videoId,
+        ownerId: review.ownerId
       })
 
       res.json({
@@ -209,13 +296,21 @@ class VideosController extends BaseController {
       return
     }
 
-    // Handle video processing completion
     if (notification.notification_type === 'eager') {
+      console.log('Processing eager transformation notification...')
       video = await videosService.updateVideoStatus(notification)
+      console.log('Video status updated:', {
+        id: video.id,
+        thumbnailUrl: video.thumbnailUrl,
+        status: video.status
+      })
 
-      // Find associated review and mark video as ready
       const review = await reviewsService.updateReviewByVideoId(video.id, {
         isVideoReady: true
+      })
+      console.log('Review updated:', {
+        id: review.id,
+        isVideoReady: review.isVideoReady
       })
 
       res.json({
