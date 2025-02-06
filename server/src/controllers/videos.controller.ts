@@ -27,12 +27,13 @@ const generateThumbnailUrl = (publicId: string): string | undefined => {
       format: 'jpg',
       transformation: [
         {
-          width: 640,          // Larger width for HD
-          height: 360,         // 16:9 aspect ratio
+          width: 360,          // Width for 9:16 ratio
+          height: 640,         // Height for 9:16 ratio
           crop: 'fill',
           quality: 'auto:best',// Best quality
           fetch_format: 'auto',// Optimize format for browser
           video_sampling: 1,   // Take screenshot from first second
+          gravity: 'center'    // Center the crop
         }
       ]
     })
