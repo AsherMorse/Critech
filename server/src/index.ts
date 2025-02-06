@@ -8,28 +8,13 @@ import { initializeCloudinary } from './config/cloudinary';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Enable CORS with proper preflight handling
+// Enable CORS
 app.use(cors({
   origin: ['https://critech.ashermorse.org', 'http://localhost:5173'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: [
-    'Content-Type',
-    'Accept',
-    'Authorization',
-    'Origin',
-    'X-Requested-With',
-    'Access-Control-Request-Method',
-    'Access-Control-Request-Headers'
-  ],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  credentials: true,
-  maxAge: 86400, // 24 hours in seconds
-  preflightContinue: false,
-  optionsSuccessStatus: 204
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+  credentials: true
 }));
-
-// Handle preflight requests
-app.options('*', cors());
 
 app.use(express.json());
 
