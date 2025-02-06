@@ -9,15 +9,32 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Enable CORS
-app.use(cors({
-  origin: true, // Allow all origins for now to debug
+const corsOptions = {
+  origin: function (origin: any, callback: any) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      'https://critech.ashermorse.org',
+      'http://localhost:5173',
+      'https://critechapi.ashermorse.org'
+    ];
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
   credentials: true
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Handle preflight requests
-app.options('*', cors());
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
@@ -41,6 +58,7 @@ const startServer = async () => {
       console.log(`Server is running on port ${port}`);
     });
   } catch (error) {
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
