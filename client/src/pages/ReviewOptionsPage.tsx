@@ -12,6 +12,7 @@ import {
 } from '@mui/material'
 import { useLocation, Navigate, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 
 const darkTheme = createTheme({
     palette: {
@@ -49,6 +50,7 @@ interface ReviewData {
 export default function ReviewOptionsPage() {
     const location = useLocation()
     const navigate = useNavigate()
+    const { user } = useAuth()
     const state = location.state as LocationState
     const [isLoading, setIsLoading] = useState(false)
     const [formData, setFormData] = useState<ReviewData>({
@@ -67,12 +69,12 @@ export default function ReviewOptionsPage() {
 
     const handleInputChange =
         (field: keyof ReviewData) =>
-        (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-            setFormData(prev => ({
-                ...prev,
-                [field]: event.target.value
-            }))
-        }
+            (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+                setFormData(prev => ({
+                    ...prev,
+                    [field]: event.target.value
+                }))
+            }
 
     const handleArrayChange = (
         field: 'pros' | 'cons',
@@ -80,7 +82,7 @@ export default function ReviewOptionsPage() {
     ) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setFormData(prev => ({
             ...prev,
-            [field]: prev[field].map((item, i) => 
+            [field]: prev[field].map((item, i) =>
                 i === index ? event.target.value : item
             )
         }))
@@ -92,7 +94,7 @@ export default function ReviewOptionsPage() {
     ) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setFormData(prev => ({
             ...prev,
-            altLinks: prev.altLinks.map((link, i) => 
+            altLinks: prev.altLinks.map((link, i) =>
                 i === index ? { ...link, [field]: event.target.value } : link
             )
         }))
@@ -144,7 +146,8 @@ export default function ReviewOptionsPage() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${user?.access_token}`
                 },
                 body: JSON.stringify({
                     videoId: Number(cleanedData.videoId),
@@ -157,19 +160,21 @@ export default function ReviewOptionsPage() {
             })
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+                const errorData = await response.json()
+                console.error('Server error:', errorData)
                 throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
             }
 
             const data = await response.json()
+            console.log('Review created:', data)
             if (!data.id) {
                 throw new Error('Invalid response format from server')
             }
-            
+
             navigate(`/review/${data.id}`)
         } catch (error) {
+            console.error('Error creating review:', error)
             alert(`Error creating review: ${error instanceof Error ? error.message : 'Unknown error'}`)
-            console.error('Network error:', error)
         } finally {
             setIsLoading(false)
         }

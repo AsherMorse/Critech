@@ -6,10 +6,15 @@ import NotFound from './pages/NotFound'
 import CreateReviewPage from './pages/CreateReviewPage'
 import VideoPreview from './pages/VideoPreview'
 import ReviewOptionsPage from './pages/ReviewOptionsPage'
+import EditReviewPage from './pages/EditReviewPage'
 import { useAuth } from './contexts/AuthContext'
 
 export default function App() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return <div>Loading...</div>
+  }
 
   return (
     <Router>
@@ -20,6 +25,7 @@ export default function App() {
         <Route path="/create-review" element={user ? <CreateReviewPage /> : <Navigate to="/login" />} />
         <Route path="/video-preview" element={user ? <VideoPreview /> : <Navigate to="/login" />} />
         <Route path="/review-options" element={user ? <ReviewOptionsPage /> : <Navigate to="/login" />} />
+        <Route path="/review/:id/edit" element={user ? <EditReviewPage /> : <Navigate to="/login" />} />
         <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

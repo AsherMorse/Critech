@@ -12,7 +12,7 @@ const port = process.env.PORT || 3000;
 app.use(cors({
   origin: ['https://critech.ashermorse.org', 'http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
   credentials: true
 }));
 

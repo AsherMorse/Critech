@@ -6,6 +6,12 @@ import type { ReviewStatus } from '../db/schema'
 // DTO for creating a review from a video
 export interface CreateReviewFromVideoDto {
   videoId: number
+  title?: string
+  description?: string
+  pros?: string[]
+  cons?: string[]
+  altLinks?: { name: string, url: string }[]
+  tags?: string[]
 }
 
 // DTO for updating review details
@@ -23,12 +29,15 @@ class ReviewsService {
   async createFromVideo(data: CreateReviewFromVideoDto) {
     const [review] = await db.insert(reviews).values({
       videoId: data.videoId,
-      pros: [],
-      cons: [],
-      tags: [],
-      status: 'video_uploaded',
+      title: data.title || '',
+      description: data.description || '',
+      pros: data.pros || [],
+      cons: data.cons || [],
+      altLinks: data.altLinks || [],
+      tags: data.tags || [],
+      status: data.title && data.description ? 'draft' : 'video_uploaded',
       statusHistory: [{
-        status: 'video_uploaded',
+        status: data.title && data.description ? 'draft' : 'video_uploaded',
         timestamp: new Date().toISOString()
       }]
     }).returning()
