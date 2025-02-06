@@ -39,7 +39,7 @@ export default function DiscoverView() {
     const [lastId, setLastId] = useState<number | undefined>(undefined)
     const [hasMore, setHasMore] = useState(true)
     const [isFetching, setIsFetching] = useState(false)
-    const { token, loading: authLoading } = useAuth()
+    const { token } = useAuth()
     const navigate = useNavigate()
 
     // Fetch total count
