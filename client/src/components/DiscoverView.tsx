@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
+const API_URL = import.meta.env.VITE_API_URL || ''
+
 interface Review {
     id: number
     videoId: number
@@ -44,7 +46,7 @@ export default function DiscoverView() {
                     return
                 }
 
-                const response = await fetch('/api/reviews', {
+                const response = await fetch(`${API_URL}/api/reviews`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
