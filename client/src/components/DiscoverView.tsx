@@ -28,17 +28,6 @@ interface Review {
     }
 }
 
-interface ApiResponse {
-    data: Review[]
-    meta?: {
-        pagination?: {
-            page: number
-            limit: number
-            total: number
-        }
-    }
-}
-
 export default function DiscoverView() {
     const [reviews, setReviews] = useState<Review[]>([])
     const [loading, setLoading] = useState(true)
