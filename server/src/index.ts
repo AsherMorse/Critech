@@ -34,7 +34,9 @@ const startServer = async () => {
     // Error handling middleware should be last
     app.use(errorHandler);
 
-    app.listen(port, () => {});
+    app.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+    });
   } catch (error) {
     process.exit(1);
   }

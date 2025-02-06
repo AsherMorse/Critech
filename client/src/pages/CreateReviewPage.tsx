@@ -53,7 +53,7 @@ export default function CreateReviewPage() {
 
       xhr.open('POST', fullUrl, true)
       xhr.setRequestHeader('Accept', 'application/json')
-      
+
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
           // Upload is 50% of the total progress
@@ -81,14 +81,21 @@ export default function CreateReviewPage() {
           }
 
           const response = JSON.parse(xhr.responseText)
-          
+
           if (xhr.status === 201) {
             // Set to 100% when complete
             setUploadProgress(100)
-            
+
             // Wait a moment to show 100% before navigating
             setTimeout(() => {
-              navigate('/dashboard')
+              const videoData = {
+                videoUrl: response.video.videoUrl,
+                videoId: response.video.id
+              }
+
+              navigate('/video-preview', {
+                state: videoData
+              })
             }, 500)
           } else {
             const errorMessage = response.error || 'Upload failed. Please try again.'
@@ -130,8 +137,8 @@ export default function CreateReviewPage() {
 
   return (
     <ThemeProvider theme={darkTheme}>
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           minHeight: '100vh',
           bgcolor: 'background.default',
           display: 'flex',
@@ -150,9 +157,9 @@ export default function CreateReviewPage() {
             bgcolor: 'background.paper'
           }}
         >
-          <Typography 
-            variant="h5" 
-            gutterBottom 
+          <Typography
+            variant="h5"
+            gutterBottom
             sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}
           >
             Upload Video
@@ -209,12 +216,12 @@ export default function CreateReviewPage() {
                 </>
               ) : (
                 <>
-                  <CloudUpload 
-                    sx={{ 
-                      fontSize: 48, 
-                      color: error ? 'error.main' : 'primary.main', 
-                      mb: 2 
-                    }} 
+                  <CloudUpload
+                    sx={{
+                      fontSize: 48,
+                      color: error ? 'error.main' : 'primary.main',
+                      mb: 2
+                    }}
                   />
                   <Typography variant="h6" gutterBottom>
                     Drag and drop your video here
@@ -231,9 +238,9 @@ export default function CreateReviewPage() {
           </label>
 
           {error && (
-            <Typography 
-              color="error" 
-              variant="body2" 
+            <Typography
+              color="error"
+              variant="body2"
               sx={{ textAlign: 'center', mt: 2 }}
             >
               {error}
@@ -243,4 +250,4 @@ export default function CreateReviewPage() {
       </Box>
     </ThemeProvider>
   )
-} 
+}
