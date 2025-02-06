@@ -4,6 +4,8 @@ import { Box, Typography, Container, Paper, Chip, List, ListItem, ListItemText, 
 import { ArrowBack } from '@mui/icons-material'
 import { useAuth } from '../contexts/AuthContext'
 
+const API_URL = import.meta.env.VITE_API_URL || ''
+
 const darkTheme = createTheme({
     palette: {
         mode: 'dark',
@@ -65,7 +67,7 @@ export default function ReviewDetailsPage() {
                     return
                 }
 
-                const response = await fetch(`/api/reviews/${reviewId}`, {
+                const response = await fetch(`${API_URL}/api/reviews/${reviewId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -76,23 +78,37 @@ export default function ReviewDetailsPage() {
                     throw new Error(`Failed to fetch review: ${response.statusText}`)
                 }
 
-                const data = await response.json()
-                console.log('Review data:', data)
+                let data
+                try {
+                    const text = await response.text()
+                    console.log('Raw review response:', text)
+                    data = JSON.parse(text)
+                } catch (parseError) {
+                    console.error('Error parsing review response:', parseError)
+                    throw new Error('Failed to parse review data')
+                }
 
                 // Fetch the video data
-                const videoResponse = await fetch(`/api/videos/${data.videoId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                })
+                if (data.videoId) {
+                    try {
+                        const videoResponse = await fetch(`${API_URL}/api/videos/${data.videoId}`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        })
 
-                if (videoResponse.ok) {
-                    const videoData = await videoResponse.json()
-                    console.log('Video data:', videoData)
-                    data.video = videoData
-                } else {
-                    console.error('Failed to fetch video:', videoResponse.status, videoResponse.statusText)
+                        if (videoResponse.ok) {
+                            const videoText = await videoResponse.text()
+                            console.log('Raw video response:', videoText)
+                            const videoData = JSON.parse(videoText)
+                            data.video = videoData
+                        } else {
+                            console.error('Failed to fetch video:', videoResponse.status, videoResponse.statusText)
+                        }
+                    } catch (videoError) {
+                        console.error('Error fetching/parsing video:', videoError)
+                    }
                 }
 
                 setReview(data)
