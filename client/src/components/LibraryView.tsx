@@ -1,10 +1,11 @@
-import { Box, Typography, Grid, Card, CardMedia, CardContent, Button } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { Box, Typography, Grid, Card, CardMedia, CardContent, Button, Skeleton } from '@mui/material'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { Add } from '@mui/icons-material'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
+const PAGE_SIZE = 1
 
 interface Review {
     id: number
@@ -36,62 +37,131 @@ export default function LibraryView() {
     const [reviews, setReviews] = useState<Review[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [totalReviews, setTotalReviews] = useState(0)
+    const [lastId, setLastId] = useState<number | undefined>(undefined)
+    const [hasMore, setHasMore] = useState(true)
+    const [isFetching, setIsFetching] = useState(false)
     const { token, user } = useAuth()
     const navigate = useNavigate()
 
-    useEffect(() => {
-        const fetchReviews = async () => {
-            try {
-                if (!token) {
-                    setError('Please log in to view your reviews')
-                    setLoading(false)
-                    return
+    // Fetch total count
+    const fetchTotalCount = useCallback(async () => {
+        try {
+            const response = await fetch(`${API_URL}/api/reviews/count?ownerId=${user?.id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
+            })
 
-                const response = await fetch(`${API_URL}/api/reviews`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                })
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`)
+            }
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`)
-                }
+            const data = await response.json()
+            setTotalReviews(data.count)
+        } catch (error) {
+            console.error('Error fetching review count:', error)
+        }
+    }, [token, user?.id])
 
-                let reviewsData
-                try {
-                    const text = await response.text()
-                    console.log('Raw response:', text)
-                    const data = text ? JSON.parse(text) : []
-                    reviewsData = Array.isArray(data) ? data : data.data || []
-                } catch (parseError) {
-                    console.error('Error parsing response:', parseError)
-                    reviewsData = []
-                }
+    // Fetch next page of reviews
+    const fetchNextPage = useCallback(async () => {
+        if (isFetching || !hasMore) return
 
-                // Filter for user's own reviews and exclude deleted ones
-                const userReviews = reviewsData.filter((review: Review) =>
-                    review &&
-                    review.ownerId === user?.id &&
-                    review.status !== 'deleted'
-                )
-                console.log('User reviews:', userReviews)
-                setReviews(userReviews)
-            } catch (error) {
-                console.error('Error fetching reviews:', error)
-                setError(
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to load reviews'
-                )
-            } finally {
+        try {
+            setIsFetching(true)
+
+            if (!token) {
+                setError('Please log in to view your reviews')
                 setLoading(false)
+                return
+            }
+
+            const url = new URL(`${API_URL}/api/reviews/page`)
+            url.searchParams.append('pageSize', PAGE_SIZE.toString())
+            url.searchParams.append('ownerId', user?.id || '')
+            if (lastId) url.searchParams.append('lastId', lastId.toString())
+
+            const response = await fetch(url.toString(), {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`)
+            }
+
+            const newReviews = await response.json()
+
+            if (newReviews.length === 0 || newReviews.length < PAGE_SIZE) {
+                setHasMore(false)
+                if (newReviews.length > 0) {
+                    setReviews(prev => {
+                        // Create a Set of existing IDs
+                        const existingIds = new Set(prev.map((r: Review) => r.id))
+                        // Only add reviews that don't already exist
+                        const uniqueNewReviews = newReviews.filter((r: Review) => !existingIds.has(r.id))
+                        return [...prev, ...uniqueNewReviews]
+                    })
+                    setLastId(newReviews[newReviews.length - 1].id)
+                }
+            } else {
+                setReviews(prev => {
+                    // Create a Set of existing IDs
+                    const existingIds = new Set(prev.map((r: Review) => r.id))
+                    // Only add reviews that don't already exist
+                    const uniqueNewReviews = newReviews.filter((r: Review) => !existingIds.has(r.id))
+                    return [...prev, ...uniqueNewReviews]
+                })
+                setLastId(newReviews[newReviews.length - 1].id)
+            }
+
+            console.log('Fetched reviews:', {
+                count: newReviews.length,
+                lastId: lastId,
+                hasMore: newReviews.length === PAGE_SIZE,
+                total: totalReviews,
+                current: reviews.length + newReviews.length,
+                newReviewIds: newReviews.map((r: Review) => r.id)
+            })
+        } catch (error) {
+            console.error('Error fetching reviews:', error)
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to load reviews'
+            )
+        } finally {
+            setIsFetching(false)
+            setLoading(false)
+        }
+    }, [token, lastId, user?.id, reviews.length, totalReviews, hasMore, isFetching])
+
+    // Initial load
+    useEffect(() => {
+        const init = async () => {
+            await fetchTotalCount()
+            await fetchNextPage()
+        }
+        init()
+    }, [fetchTotalCount, fetchNextPage])
+
+    // Auto-fetch next page when scrolling near bottom
+    useEffect(() => {
+        if (!hasMore || loading || isFetching) return
+
+        const handleScroll = () => {
+            if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1000) {
+                fetchNextPage()
             }
         }
 
-        fetchReviews()
-    }, [token, user?.id])
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [hasMore, loading, isFetching, fetchNextPage])
 
     const handleReviewClick = (reviewId: number) => {
         navigate(`/review/${reviewId}/edit`)
@@ -101,25 +171,17 @@ export default function LibraryView() {
         navigate('/create-review')
     }
 
-    if (loading) {
-        return (
-            <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}>
-                <Typography>Loading your reviews...</Typography>
-            </Box>
-        )
-    }
+    // Show loading skeletons for the next batch
+    const renderSkeletons = () => {
+        if (!loading && !hasMore) return null
 
-    if (error) {
-        return (
-            <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography color="error" gutterBottom>{error}</Typography>
-                {error === 'Please log in to view your reviews' && (
-                    <Typography variant="body2">
-                        You need to be logged in to view your reviews.
-                    </Typography>
-                )}
-            </Box>
-        )
+        return Array.from({ length: PAGE_SIZE }).map((_, index) => (
+            <Grid item xs={12} sm={6} md={4} key={`skeleton-${index}`}>
+                <Card sx={{ height: 200 }}>
+                    <Skeleton variant="rectangular" height={200} />
+                </Card>
+            </Grid>
+        ))
     }
 
     return (
@@ -136,7 +198,29 @@ export default function LibraryView() {
                 </Button>
             </Box>
 
-            {reviews.length === 0 ? (
+            {/* Count indicator */}
+            {reviews.length > 0 && (
+                <Box sx={{ width: '100%', mb: 2 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        {isFetching ? 'Loading more reviews...' :
+                            !hasMore ? `Loaded all ${reviews.length} reviews` :
+                                `Loaded ${reviews.length} of ${totalReviews} reviews`}
+                    </Typography>
+                </Box>
+            )}
+
+            {error && (
+                <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', flexDirection: 'column', alignItems: 'center' }}>
+                    <Typography color="error" gutterBottom>{error}</Typography>
+                    {error === 'Please log in to view your reviews' && (
+                        <Typography variant="body2">
+                            You need to be logged in to view your reviews.
+                        </Typography>
+                    )}
+                </Box>
+            )}
+
+            {!loading && !error && reviews.length === 0 && (
                 <Box sx={{
                     p: 4,
                     display: 'flex',
@@ -150,63 +234,82 @@ export default function LibraryView() {
                         Start creating reviews to build your library
                     </Typography>
                 </Box>
-            ) : (
-                <Grid container spacing={2}>
-                    {reviews.map((review) => (
-                        <Grid item xs={12} sm={6} md={4} key={review.id}>
-                            <Card
-                                sx={{
-                                    position: 'relative',
-                                    height: 200,
-                                    cursor: 'pointer',
-                                    '&:hover': {
-                                        transform: 'scale(1.02)',
-                                        transition: 'transform 0.2s ease-in-out'
-                                    }
-                                }}
-                                onClick={() => handleReviewClick(review.id)}
-                            >
+            )}
+
+            <Grid container spacing={2}>
+                {reviews.map((review) => (
+                    <Grid item xs={12} sm={6} md={4} key={review.id}>
+                        <Card
+                            sx={{
+                                position: 'relative',
+                                height: 200,
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    transform: 'scale(1.02)',
+                                    transition: 'transform 0.2s ease-in-out'
+                                }
+                            }}
+                            onClick={() => handleReviewClick(review.id)}
+                        >
+                            {review.video?.thumbnailUrl ? (
                                 <CardMedia
                                     component="img"
                                     height="200"
-                                    image={review.video?.thumbnailUrl || ``}
+                                    image={review.video.thumbnailUrl}
                                     alt={review.title || 'Review thumbnail'}
                                     sx={{ objectFit: 'cover' }}
+                                    onError={(e) => {
+                                        if (review.video?.thumbnailUrl) {
+                                            console.error('Failed to load thumbnail for review:', {
+                                                reviewId: review.id,
+                                                attemptedUrl: review.video.thumbnailUrl
+                                            })
+                                        }
+                                        const img = e.target as HTMLImageElement
+                                        img.src = '/placeholder-thumbnail.jpg'
+                                    }}
                                 />
-                                <CardContent
+                            ) : (
+                                <Box sx={{ height: '100%', bgcolor: 'rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Loading thumbnail...
+                                    </Typography>
+                                </Box>
+                            )}
+                            <CardContent
+                                sx={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    width: '100%',
+                                    background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
+                                    p: 1,
+                                    '&:last-child': { pb: 1 }
+                                }}
+                            >
+                                <Typography variant="subtitle1" sx={{ color: 'white', mb: 0.5 }}>
+                                    {review.title || 'Untitled Review'}
+                                </Typography>
+                                <Typography
+                                    variant="caption"
                                     sx={{
-                                        position: 'absolute',
-                                        bottom: 0,
-                                        width: '100%',
-                                        background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
-                                        p: 1,
-                                        '&:last-child': { pb: 1 }
+                                        color: 'rgba(255,255,255,0.7)',
+                                        display: 'block',
+                                        mb: 0.5
                                     }}
                                 >
-                                    <Typography variant="subtitle1" sx={{ color: 'white', mb: 0.5 }}>
-                                        {review.title || 'Untitled Review'}
+                                    Status: {review.status.replace(/_/g, ' ').toUpperCase()}
+                                </Typography>
+                                {review.description && (
+                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }} noWrap>
+                                        {review.description}
                                     </Typography>
-                                    <Typography
-                                        variant="caption"
-                                        sx={{
-                                            color: 'rgba(255,255,255,0.7)',
-                                            display: 'block',
-                                            mb: 0.5
-                                        }}
-                                    >
-                                        Status: {review.status.replace(/_/g, ' ').toUpperCase()}
-                                    </Typography>
-                                    {review.description && (
-                                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }} noWrap>
-                                            {review.description}
-                                        </Typography>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    ))}
-                </Grid>
-            )}
+                                )}
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                ))}
+                {renderSkeletons()}
+            </Grid>
         </Box>
     )
-} 
+}

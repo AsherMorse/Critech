@@ -101,11 +101,23 @@ export default function DiscoverView() {
                 setHasMore(false)
                 setProgress(100)
                 if (newReviews.length > 0) {
-                    setReviews(prev => [...prev, ...newReviews])
+                    setReviews(prev => {
+                        // Create a Set of existing IDs
+                        const existingIds = new Set(prev.map((r: Review) => r.id))
+                        // Only add reviews that don't already exist
+                        const uniqueNewReviews = newReviews.filter((r: Review) => !existingIds.has(r.id))
+                        return [...prev, ...uniqueNewReviews]
+                    })
                     setLastId(newReviews[newReviews.length - 1].id)
                 }
             } else {
-                setReviews(prev => [...prev, ...newReviews])
+                setReviews(prev => {
+                    // Create a Set of existing IDs
+                    const existingIds = new Set(prev.map((r: Review) => r.id))
+                    // Only add reviews that don't already exist
+                    const uniqueNewReviews = newReviews.filter((r: Review) => !existingIds.has(r.id))
+                    return [...prev, ...uniqueNewReviews]
+                })
                 setLastId(newReviews[newReviews.length - 1].id)
                 setProgress(nextProgress)
             }
@@ -174,22 +186,10 @@ export default function DiscoverView() {
 
     return (
         <Box sx={{ p: 2 }}>
-            {/* Progress indicator */}
-            {(loading || (hasMore && isFetching) || (!hasMore && reviews.length > 0)) && (
+            {/* Count indicator */}
+            {reviews.length > 0 && (
                 <Box sx={{ width: '100%', mb: 2 }}>
-                    <LinearProgress
-                        variant="determinate"
-                        value={progress}
-                        sx={{
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: 'rgba(255,255,255,0.1)',
-                            '& .MuiLinearProgress-bar': {
-                                borderRadius: 4
-                            }
-                        }}
-                    />
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                         {isFetching ? 'Loading more reviews...' :
                             !hasMore ? `Loaded all ${reviews.length} reviews` :
                                 `Loaded ${reviews.length} of ${totalReviews} reviews`}
@@ -216,7 +216,7 @@ export default function DiscoverView() {
 
             <Grid container spacing={2}>
                 {reviews.map((review) => (
-                    <Grid item xs={12} sm={6} md={4} key={`${review.id}-${review.updatedAt}`}>
+                    <Grid item xs={12} sm={6} md={4} key={review.id}>
                         <Card
                             sx={{
                                 position: 'relative',
