@@ -10,12 +10,14 @@ const port = process.env.PORT || 3000;
 
 // Enable CORS
 app.use(cors({
-  origin: ['https://critech.ashermorse.org', 'http://localhost:5173'],
+  origin: true, // Allow all origins for now to debug
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
-  credentials: true,
-  exposedHeaders: ['Content-Length', 'Content-Type']
+  credentials: true
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 app.use(express.json());
 
