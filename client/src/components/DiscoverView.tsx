@@ -14,7 +14,7 @@ interface Review {
     cons?: string[]
     altLinks?: string[]
     tags?: string[]
-    status: 'video_uploaded' | 'draft' | 'in_review' | 'published' | 'archived' | 'deleted'
+    status: 'video_uploaded' | 'dralift' | 'in_review' | 'published' | 'archived' | 'deleted'
     statusHistory: Array<{
         status: string
         timestamp: string
