@@ -1,4 +1,4 @@
-import { Box, Typography, Grid, Card, CardMedia, CardContent, Skeleton, LinearProgress } from '@mui/material'
+import { Box, Typography, Grid, Card, CardMedia, CardContent, Skeleton } from '@mui/material'
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -34,13 +34,12 @@ interface Review {
 export default function DiscoverView() {
     const [reviews, setReviews] = useState<Review[]>([])
     const [loading, setLoading] = useState(true)
-    const [progress, setProgress] = useState(0)
     const [error, setError] = useState<string | null>(null)
     const [totalReviews, setTotalReviews] = useState(0)
     const [lastId, setLastId] = useState<number | undefined>(undefined)
     const [hasMore, setHasMore] = useState(true)
     const [isFetching, setIsFetching] = useState(false)
-    const { token } = useAuth()
+    const { token, loading: authLoading } = useAuth()
     const navigate = useNavigate()
 
     // Fetch total count
@@ -94,12 +93,8 @@ export default function DiscoverView() {
 
             const newReviews = await response.json()
 
-            // Update progress before state changes
-            const nextProgress = Math.min(100, ((reviews.length + newReviews.length) / totalReviews) * 100)
-
             if (newReviews.length === 0 || newReviews.length < PAGE_SIZE) {
                 setHasMore(false)
-                setProgress(100)
                 if (newReviews.length > 0) {
                     setReviews(prev => {
                         // Create a Set of existing IDs
@@ -119,14 +114,12 @@ export default function DiscoverView() {
                     return [...prev, ...uniqueNewReviews]
                 })
                 setLastId(newReviews[newReviews.length - 1].id)
-                setProgress(nextProgress)
             }
 
             console.log('Fetched reviews:', {
                 count: newReviews.length,
                 lastId: lastId,
                 hasMore: newReviews.length === PAGE_SIZE,
-                progress: nextProgress,
                 total: totalReviews,
                 current: reviews.length + newReviews.length,
                 newReviewIds: newReviews.map((r: Review) => r.id)
