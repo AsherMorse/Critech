@@ -16,6 +16,11 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
+export const UPLOAD_PRESETS = {
+  REVIEW_VIDEO: 'review_video_upload',
+  REVIEW_THUMBNAIL: 'review_thumbnail_upload'
+} as const
+
 const ALLOWED_ORIGINS = [
   process.env.SERVER_URL!,
   process.env.SERVER_URL!.replace('http:', 'https:'),
@@ -94,22 +99,42 @@ cloudinary.config({
 
 export const initializeCloudinary = async () => {
   try {
+    console.log('Initializing Cloudinary...')
+    console.log('Ensuring upload presets...')
     await ensureUploadPresets()
+    console.log('Configuring CORS...')
     await configureCors()
+    console.log('Cloudinary initialization complete')
   } catch (error: any) {
-    throw new Error('Failed to initialize Cloudinary: ' + error.message)
+    console.error('Error in initializeCloudinary:', error)
+    throw new Error(`Failed to initialize Cloudinary: ${error.message || error}`)
   }
 }
 
 export const configureCors = async () => {
   try {
+    console.log('Configuring CORS for upload presets...')
     for (const preset of Object.values(UPLOAD_PRESETS)) {
-      await cloudinary.api.update_upload_preset(preset, {
-        allowed_origins: ALLOWED_ORIGINS
-      })
+      console.log(`Updating CORS for preset: ${preset}`)
+      try {
+        await cloudinary.api.update_upload_preset(preset, {
+          allowed_origins: ALLOWED_ORIGINS
+        })
+        console.log(`CORS updated successfully for preset: ${preset}`)
+      } catch (error: any) {
+        if (error.error?.http_code === 420) {
+          // Rate limit error
+          const message = error.error?.message || 'Rate limit exceeded'
+          throw new Error(`Cloudinary API ${message}`)
+        } else {
+          const message = error.error?.message || error.message || 'Unknown error'
+          throw new Error(`Failed to update CORS for preset ${preset}: ${message}`)
+        }
+      }
     }
   } catch (error: any) {
-    throw new Error('Failed to configure Cloudinary CORS: ' + error.message)
+    console.error('Error in configureCors:', error)
+    throw error // Pass the error through without wrapping it again
   }
 }
 
@@ -141,15 +166,25 @@ export const ensureUploadPresets = async () => {
     }
 
     try {
+      console.log('Creating video upload preset...')
       await cloudinary.api.create_upload_preset({
         name: UPLOAD_PRESETS.REVIEW_VIDEO,
         ...videoPresetConfig
       })
+      console.log('Video upload preset created successfully')
     } catch (error: any) {
+      console.error('Error creating video upload preset:', error)
       if (error.error?.http_code === 409) {
+        console.log('Preset exists, updating instead...')
         await cloudinary.api.update_upload_preset(UPLOAD_PRESETS.REVIEW_VIDEO, videoPresetConfig)
+        console.log('Video upload preset updated successfully')
+      } else if (error.error?.http_code === 420) {
+        // Rate limit error
+        const message = error.error?.message || 'Rate limit exceeded'
+        throw new Error(`Cloudinary API ${message}`)
       } else {
-        throw error
+        const message = error.error?.message || error.message || 'Unknown error'
+        throw new Error(`Failed to create/update video preset: ${message}`)
       }
     }
 
@@ -164,19 +199,30 @@ export const ensureUploadPresets = async () => {
     }
 
     try {
+      console.log('Creating thumbnail upload preset...')
       await cloudinary.api.create_upload_preset({
         name: UPLOAD_PRESETS.REVIEW_THUMBNAIL,
         ...thumbnailPresetConfig
       })
+      console.log('Thumbnail upload preset created successfully')
     } catch (error: any) {
+      console.error('Error creating thumbnail upload preset:', error)
       if (error.error?.http_code === 409) {
+        console.log('Preset exists, updating instead...')
         await cloudinary.api.update_upload_preset(UPLOAD_PRESETS.REVIEW_THUMBNAIL, thumbnailPresetConfig)
+        console.log('Thumbnail upload preset updated successfully')
+      } else if (error.error?.http_code === 420) {
+        // Rate limit error
+        const message = error.error?.message || 'Rate limit exceeded'
+        throw new Error(`Cloudinary API ${message}`)
       } else {
-        throw error
+        const message = error.error?.message || error.message || 'Unknown error'
+        throw new Error(`Failed to create/update thumbnail preset: ${message}`)
       }
     }
   } catch (error: any) {
-    throw new Error('Failed to configure presets: ' + error.message)
+    console.error('Error in ensureUploadPresets:', error)
+    throw error // Pass the error through without wrapping it again
   }
 }
 
@@ -189,10 +235,5 @@ export const defaultUploadOptions = {
     { fetch_format: 'auto' }
   ]
 }
-
-export const UPLOAD_PRESETS = {
-  REVIEW_VIDEO: 'review_video_upload',
-  REVIEW_THUMBNAIL: 'review_thumbnail_upload'
-} as const
 
 export default cloudinary
