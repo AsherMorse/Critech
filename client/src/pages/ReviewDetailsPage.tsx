@@ -179,7 +179,9 @@ export default function ReviewDetailsPage() {
                         <Paper
                             sx={{
                                 width: '100%',
-                                aspectRatio: review.video?.metadata?.aspectRatio?.replace(':', '/') || '16/9',
+                                maxWidth: '640px',
+                                margin: '0 auto',
+                                aspectRatio: '9/16',
                                 mb: 3,
                                 bgcolor: 'background.paper',
                                 overflow: 'hidden'

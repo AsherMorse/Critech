@@ -176,7 +176,7 @@ export default function LibraryView() {
         if (!loading && !hasMore) return null
 
         return Array.from({ length: PAGE_SIZE }).map((_, index) => (
-            <Grid item xs={6} sm={4} md={3} lg={2} key={`skeleton-${index}`}>
+            <Grid item xs={12} sm={6} md={4} key={`skeleton-${index}`}>
                 <Card sx={{
                     height: 0,
                     paddingTop: '177.77%', // 9:16 aspect ratio (16/9 * 100)
@@ -252,7 +252,7 @@ export default function LibraryView() {
 
             <Grid container spacing={2}>
                 {reviews.map((review) => (
-                    <Grid item xs={6} sm={4} md={3} lg={2} key={review.id}>
+                    <Grid item xs={12} sm={6} md={4} key={review.id}>
                         <Card
                             sx={{
                                 height: 0,
