@@ -179,8 +179,9 @@ export default function LibraryView() {
             <Grid item xs={6} sm={4} md={3} lg={2} key={`skeleton-${index}`}>
                 <Card sx={{
                     height: 0,
-                    paddingTop: '177.77%', // 16:9 aspect ratio
-                    position: 'relative'
+                    paddingTop: '177.77%', // 9:16 aspect ratio (16/9 * 100)
+                    position: 'relative',
+                    bgcolor: 'rgba(0,0,0,0.1)'
                 }}>
                     <Skeleton
                         variant="rectangular"
@@ -255,9 +256,10 @@ export default function LibraryView() {
                         <Card
                             sx={{
                                 height: 0,
-                                paddingTop: '177.77%', // 16:9 aspect ratio
+                                paddingTop: '177.77%', // 9:16 aspect ratio (16/9 * 100)
                                 position: 'relative',
                                 cursor: 'pointer',
+                                bgcolor: 'rgba(0,0,0,0.1)',
                                 '&:hover': {
                                     transform: 'scale(1.02)',
                                     transition: 'transform 0.2s ease-in-out'
@@ -277,7 +279,6 @@ export default function LibraryView() {
                                         width: '100%',
                                         height: '100%',
                                         objectFit: 'contain',
-                                        bgcolor: 'rgba(0,0,0,0.1)',
                                         backgroundSize: 'contain'
                                     }}
                                     onError={(e) => {
@@ -298,7 +299,6 @@ export default function LibraryView() {
                                     left: 0,
                                     width: '100%',
                                     height: '100%',
-                                    bgcolor: 'rgba(0,0,0,0.1)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center'
