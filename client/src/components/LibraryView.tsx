@@ -176,9 +176,22 @@ export default function LibraryView() {
         if (!loading && !hasMore) return null
 
         return Array.from({ length: PAGE_SIZE }).map((_, index) => (
-            <Grid item xs={12} sm={6} md={4} key={`skeleton-${index}`}>
-                <Card sx={{ height: 200 }}>
-                    <Skeleton variant="rectangular" height={200} />
+            <Grid item xs={6} sm={4} md={3} lg={2} key={`skeleton-${index}`}>
+                <Card sx={{
+                    height: 0,
+                    paddingTop: '177.77%', // 16:9 aspect ratio
+                    position: 'relative'
+                }}>
+                    <Skeleton
+                        variant="rectangular"
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%'
+                        }}
+                    />
                 </Card>
             </Grid>
         ))
@@ -238,11 +251,12 @@ export default function LibraryView() {
 
             <Grid container spacing={2}>
                 {reviews.map((review) => (
-                    <Grid item xs={12} sm={6} md={4} key={review.id}>
+                    <Grid item xs={6} sm={4} md={3} lg={2} key={review.id}>
                         <Card
                             sx={{
+                                height: 0,
+                                paddingTop: '177.77%', // 16:9 aspect ratio
                                 position: 'relative',
-                                height: 200,
                                 cursor: 'pointer',
                                 '&:hover': {
                                     transform: 'scale(1.02)',
@@ -254,10 +268,18 @@ export default function LibraryView() {
                             {review.video?.thumbnailUrl ? (
                                 <CardMedia
                                     component="img"
-                                    height="200"
                                     image={review.video.thumbnailUrl}
                                     alt={review.title || 'Review thumbnail'}
-                                    sx={{ objectFit: 'cover' }}
+                                    sx={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'contain',
+                                        bgcolor: 'rgba(0,0,0,0.1)',
+                                        backgroundSize: 'contain'
+                                    }}
                                     onError={(e) => {
                                         if (review.video?.thumbnailUrl) {
                                             console.error('Failed to load thumbnail for review:', {
@@ -270,7 +292,17 @@ export default function LibraryView() {
                                     }}
                                 />
                             ) : (
-                                <Box sx={{ height: '100%', bgcolor: 'rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Box sx={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    bgcolor: 'rgba(0,0,0,0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Loading thumbnail...
                                     </Typography>
@@ -280,7 +312,8 @@ export default function LibraryView() {
                                 sx={{
                                     position: 'absolute',
                                     bottom: 0,
-                                    width: '100%',
+                                    left: 0,
+                                    right: 0,
                                     background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
                                     p: 1,
                                     '&:last-child': { pb: 1 }
