@@ -36,7 +36,7 @@ interface ReviewData {
 export default function EditReviewPage() {
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
-    const { user } = useAuth()
+    const { token } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [formData, setFormData] = useState<ReviewData>({
@@ -62,7 +62,7 @@ export default function EditReviewPage() {
                 const apiUrl = `${import.meta.env.VITE_API_URL}/api/reviews/${id}`
                 const response = await fetch(apiUrl, {
                     headers: {
-                        'Authorization': `Bearer ${user?.access_token}`,
+                        'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json'
                     }
                 })
@@ -87,7 +87,7 @@ export default function EditReviewPage() {
             }
         }
         fetchReviewData()
-    }, [id, user])
+    }, [id, token])
 
     const handleInputChange =
         (field: keyof ReviewData) =>
@@ -172,7 +172,7 @@ export default function EditReviewPage() {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'Authorization': `Bearer ${user?.access_token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(cleanedData)
             })

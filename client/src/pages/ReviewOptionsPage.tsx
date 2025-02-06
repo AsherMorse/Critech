@@ -50,7 +50,7 @@ interface ReviewData {
 export default function ReviewOptionsPage() {
     const location = useLocation()
     const navigate = useNavigate()
-    const { user } = useAuth()
+    const { token } = useAuth()
     const state = location.state as LocationState
     const [isLoading, setIsLoading] = useState(false)
     const [formData, setFormData] = useState<ReviewData>({
@@ -147,7 +147,7 @@ export default function ReviewOptionsPage() {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'Authorization': `Bearer ${user?.access_token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     videoId: Number(cleanedData.videoId),
