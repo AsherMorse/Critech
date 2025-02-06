@@ -17,13 +17,22 @@ class ReviewsController extends BaseController {
   // Create a review from uploaded video
   createFromVideo = this.handleAsync(async (req: Request<{}, any, CreateReviewFromVideoDto>, res: Response) => {
     this.validateRequiredFields(req.body, ['videoId'])
-    const review = await ReviewsService.createFromVideo(req.body)
+
+    // Add owner ID from authenticated user
+    const reviewData = {
+      ...req.body,
+      ownerId: req.user!.id
+    }
+
+    const review = await ReviewsService.createFromVideo(reviewData)
     res.status(201).json(review)
   })
 
   // Get all reviews with optional filters
   getAll = this.handleAsync(async (req: Request, res: Response) => {
-    const reviews = await ReviewsService.getAllReviews()
+    // Get owner ID from query params if provided
+    const ownerId = req.query.owner as string | undefined
+    const reviews = await ReviewsService.getAllReviews(ownerId)
     res.json(reviews)
   })
 
@@ -31,7 +40,7 @@ class ReviewsController extends BaseController {
   getById = this.handleAsync(async (req: Request<{ id: string }>, res: Response) => {
     const id = this.validateId(req.params.id)
     const review = await ReviewsService.getReviewById(id)
-    
+
     if (!review) {
       throw new ApiError(404, 'Review not found')
     }
@@ -50,7 +59,7 @@ class ReviewsController extends BaseController {
   delete = this.handleAsync(async (req: Request<{ id: string }>, res: Response) => {
     const id = this.validateId(req.params.id)
     const deleted = await ReviewsService.deleteReview(id)
-    
+
     if (!deleted) {
       throw new ApiError(404, 'Review not found')
     }

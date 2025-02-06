@@ -6,6 +6,7 @@ import type { ReviewStatus } from '../db/schema'
 // DTO for creating a review from a video
 export interface CreateReviewFromVideoDto {
   videoId: number
+  ownerId: string
   title?: string
   description?: string
   pros?: string[]
@@ -29,6 +30,7 @@ class ReviewsService {
   async createFromVideo(data: CreateReviewFromVideoDto) {
     const [review] = await db.insert(reviews).values({
       videoId: data.videoId,
+      ownerId: data.ownerId,
       title: data.title || '',
       description: data.description || '',
       pros: data.pros || [],
@@ -87,7 +89,13 @@ class ReviewsService {
   }
 
   // Get all reviews
-  async getAllReviews() {
+  async getAllReviews(ownerId?: string) {
+    if (ownerId) {
+      return await db.query.reviews.findMany({
+        where: eq(reviews.ownerId, ownerId),
+        orderBy: (reviews, { desc }) => [desc(reviews.createdAt)]
+      })
+    }
     return await db.query.reviews.findMany({
       orderBy: (reviews, { desc }) => [desc(reviews.createdAt)]
     })

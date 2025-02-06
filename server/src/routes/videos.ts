@@ -2,9 +2,20 @@ import { Router } from 'express'
 import VideosController from '../controllers/videos.controller'
 import { Request, Response, NextFunction } from 'express'
 import multer from 'multer'
+import { verifyAuth } from '../middleware/auth'
+import { RequestHandler } from 'express'
 
 const router = Router()
 const upload = multer({ storage: multer.memoryStorage() })
+
+// Apply auth middleware to all routes except webhook
+router.use((req: Request, res: Response, next: NextFunction) => {
+  // Skip auth for webhook endpoint
+  if (req.path === '/webhook') {
+    return next()
+  }
+  return (verifyAuth as RequestHandler)(req, res, next)
+})
 
 // Direct upload endpoint
 router.post('/upload', upload.single('video'), (req: Request, res: Response, next: NextFunction) => {
@@ -21,7 +32,7 @@ router.get('/signature', (req: Request, res: Response, next: NextFunction) => {
   return VideosController.getUploadSignature(req, res, next)
 })
 
-// Webhook endpoint for Cloudinary notifications
+// Webhook endpoint for Cloudinary notifications (no auth required)
 router.post('/webhook', (req: Request, res: Response, next: NextFunction) => {
   return VideosController.handleWebhook(req, res, next)
 })

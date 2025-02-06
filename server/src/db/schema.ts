@@ -33,6 +33,7 @@ export const videos = pgTable('videos', {
 export const reviews = pgTable('reviews', {
   id: serial('id').primaryKey(),
   videoId: integer('video_id').notNull().references(() => videos.id), // Make videoId required
+  ownerId: text('owner_id').notNull(), // User ID from Supabase auth
   title: varchar('title', { length: 255 }),  // Make title optional initially
   description: text('description'),          // Make description optional initially
   pros: jsonb('pros'),
