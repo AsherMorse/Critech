@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Typography, Paper, ThemeProvider, createTheme, CircularProgress } from '@mui/material'
 import { CloudUpload } from '@mui/icons-material'
+import { useAuth } from '../contexts/AuthContext'
 
 const darkTheme = createTheme({
   palette: {
@@ -20,12 +21,18 @@ const darkTheme = createTheme({
 
 export default function CreateReviewPage() {
   const navigate = useNavigate()
+  const { token } = useAuth()
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
   const handleUpload = async (file: File) => {
     if (!file) return
+
+    if (!token) {
+      setError('Please log in to upload videos')
+      return
+    }
 
     // Validate file type
     if (!['video/mp4', 'video/quicktime', 'video/x-msvideo'].includes(file.type)) {
@@ -53,6 +60,7 @@ export default function CreateReviewPage() {
 
       xhr.open('POST', fullUrl, true)
       xhr.setRequestHeader('Accept', 'application/json')
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`)
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -67,6 +75,14 @@ export default function CreateReviewPage() {
           // Handle empty response
           if (!xhr.responseText) {
             setError('Server returned an empty response. Please try again.')
+            setIsUploading(false)
+            setUploadProgress(0)
+            return
+          }
+
+          // Handle 401 Unauthorized
+          if (xhr.status === 401) {
+            setError('Authentication failed. Please log in again.')
             setIsUploading(false)
             setUploadProgress(0)
             return

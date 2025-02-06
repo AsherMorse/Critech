@@ -68,6 +68,11 @@ export default function EditReviewPage() {
                 })
 
                 if (!response.ok) {
+                    if (response.status === 403) {
+                        alert('You do not have permission to edit this review')
+                        navigate('/dashboard')
+                        return
+                    }
                     throw new Error('Failed to fetch review data')
                 }
 
@@ -87,7 +92,7 @@ export default function EditReviewPage() {
             }
         }
         fetchReviewData()
-    }, [id, token])
+    }, [id, token, navigate])
 
     const handleInputChange =
         (field: keyof ReviewData) =>
