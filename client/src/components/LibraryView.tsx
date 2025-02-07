@@ -1,4 +1,4 @@
-import { Box, Typography, Grid, Card, CardMedia, CardContent, Button, Skeleton } from '@mui/material'
+import { Box, Typography, Grid, Card, CardMedia, CardContent, Button, Skeleton, Chip } from '@mui/material'
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -268,76 +268,100 @@ export default function LibraryView() {
                             onClick={() => handleReviewClick(review.id)}
                         >
                             {review.video?.thumbnailUrl ? (
-                                <CardMedia
-                                    component="img"
-                                    image={review.video.thumbnailUrl}
-                                    alt={review.title || 'Review thumbnail'}
+                                <>
+                                    <CardMedia
+                                        component="img"
+                                        image={review.video.thumbnailUrl}
+                                        alt={review.title || 'Review thumbnail'}
+                                        sx={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover'
+                                        }}
+                                    />
+                                    {/* Title overlay at the top */}
+                                    <Box
+                                        sx={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%)',
+                                            padding: 2,
+                                            color: 'white'
+                                        }}
+                                    >
+                                        <Typography variant="subtitle1" noWrap>
+                                            {review.title}
+                                        </Typography>
+                                    </Box>
+                                    {/* Tags overlay at the bottom */}
+                                    {review.tags && review.tags.length > 0 && (
+                                        <Box
+                                            sx={{
+                                                position: 'absolute',
+                                                bottom: 0,
+                                                left: 0,
+                                                right: 0,
+                                                background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%)',
+                                                padding: 2,
+                                                display: 'flex',
+                                                flexWrap: 'wrap',
+                                                gap: 0.5
+                                            }}
+                                        >
+                                            {review.tags.slice(0, 3).map((tag, index) => (
+                                                <Chip
+                                                    key={index}
+                                                    label={tag}
+                                                    size="small"
+                                                    sx={{
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                                        color: 'white',
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                                                        }
+                                                    }}
+                                                />
+                                            ))}
+                                            {review.tags.length > 3 && (
+                                                <Chip
+                                                    label={`+${review.tags.length - 3}`}
+                                                    size="small"
+                                                    sx={{
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                                        color: 'white',
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                                                        }
+                                                    }}
+                                                />
+                                            )}
+                                        </Box>
+                                    )}
+                                </>
+                            ) : (
+                                <Box
                                     sx={{
                                         position: 'absolute',
                                         top: 0,
                                         left: 0,
                                         width: '100%',
                                         height: '100%',
-                                        objectFit: 'contain',
-                                        backgroundSize: 'contain'
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        bgcolor: 'background.paper'
                                     }}
-                                    onError={(e) => {
-                                        if (review.video?.thumbnailUrl) {
-                                            console.error('Failed to load thumbnail for review:', {
-                                                reviewId: review.id,
-                                                attemptedUrl: review.video.thumbnailUrl
-                                            })
-                                        }
-                                        const img = e.target as HTMLImageElement
-                                        img.src = '/placeholder-thumbnail.jpg'
-                                    }}
-                                />
-                            ) : (
-                                <Box sx={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}>
+                                >
                                     <Typography variant="body2" color="text.secondary">
-                                        Loading thumbnail...
+                                        No thumbnail available
                                     </Typography>
                                 </Box>
                             )}
-                            <CardContent
-                                sx={{
-                                    position: 'absolute',
-                                    bottom: 0,
-                                    left: 0,
-                                    right: 0,
-                                    background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
-                                    p: 1,
-                                    '&:last-child': { pb: 1 }
-                                }}
-                            >
-                                <Typography variant="subtitle1" sx={{ color: 'white', mb: 0.5 }}>
-                                    {review.title || 'Untitled Review'}
-                                </Typography>
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        color: 'rgba(255,255,255,0.7)',
-                                        display: 'block',
-                                        mb: 0.5
-                                    }}
-                                >
-                                    Status: {review.status.replace(/_/g, ' ').toUpperCase()}
-                                </Typography>
-                                {review.description && (
-                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }} noWrap>
-                                        {review.description}
-                                    </Typography>
-                                )}
-                            </CardContent>
                         </Card>
                     </Grid>
                 ))}
