@@ -1,10 +1,9 @@
 import { Box, AppBar, Toolbar, Typography, Paper, ThemeProvider, createTheme, BottomNavigation, BottomNavigationAction } from '@mui/material'
-import { AccountCircle, Explore, Add, LibraryBooks } from '@mui/icons-material'
+import { AccountCircle, Explore, LibraryBooks } from '@mui/icons-material'
 import { useState } from 'react'
 import DiscoverView from '../components/DiscoverView'
 import LibraryView from '../components/LibraryView'
 import ProfileView from '../components/ProfileView'
-import CreateView from '../components/CreateView'
 
 const darkTheme = createTheme({
   palette: {
@@ -31,11 +30,6 @@ const navigationTabs = [
     label: 'Library',
     icon: <LibraryBooks />,
     component: <LibraryView />
-  },
-  {
-    label: 'Create',
-    icon: <Add />,
-    component: <CreateView />
   },
   {
     label: 'Profile',
