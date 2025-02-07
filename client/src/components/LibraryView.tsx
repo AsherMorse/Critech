@@ -1,8 +1,11 @@
-import { Box, Typography, Grid, Card, CardMedia, Button, Skeleton, Chip } from '@mui/material'
+import { Box, Typography, Button, Skeleton, Chip, List, ListItem, ListItemText, Paper, TextField, InputAdornment, ToggleButtonGroup, ToggleButton } from '@mui/material'
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import { Add } from '@mui/icons-material'
+import { Add, Edit } from '@mui/icons-material'
+import SearchIcon from '@mui/icons-material/Search'
+import LocalOfferIcon from '@mui/icons-material/LocalOffer'
+import TitleIcon from '@mui/icons-material/Title'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 const PAGE_SIZE = 1
@@ -41,8 +44,36 @@ export default function LibraryView() {
     const [lastId, setLastId] = useState<number | undefined>(undefined)
     const [hasMore, setHasMore] = useState(true)
     const [isFetching, setIsFetching] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
+    const [searchMode, setSearchMode] = useState<'tags' | 'content'>('content')
     const { token, user } = useAuth()
     const navigate = useNavigate()
+
+    // Filter reviews based on search query and mode
+    const filteredReviews = reviews.filter(review => {
+        if (!searchQuery.trim()) return true
+        const searchTerms = searchQuery.toLowerCase().split(' ')
+
+        if (searchMode === 'tags') {
+            return searchTerms.every(term =>
+                review.tags?.some(tag => tag.toLowerCase().includes(term))
+            )
+        } else {
+            // Search in title and description
+            return searchTerms.every(term => {
+                const titleMatch = review.title?.toLowerCase().includes(term)
+                const descMatch = review.description?.toLowerCase().includes(term)
+                return titleMatch || descMatch
+            })
+        }
+    })
+
+    const handleSearchModeChange = (_event: React.MouseEvent<HTMLElement>, newMode: 'tags' | 'content' | null) => {
+        if (newMode !== null) {
+            setSearchMode(newMode)
+            setSearchQuery('') // Clear search when changing modes
+        }
+    }
 
     // Fetch total count
     const fetchTotalCount = useCallback(async () => {
@@ -176,49 +207,87 @@ export default function LibraryView() {
         if (!loading && !hasMore) return null
 
         return Array.from({ length: PAGE_SIZE }).map((_, index) => (
-            <Grid item xs={12} sm={6} md={4} key={`skeleton-${index}`}>
-                <Card sx={{
-                    height: 0,
-                    paddingTop: '177.77%', // 9:16 aspect ratio (16/9 * 100)
-                    position: 'relative',
-                    bgcolor: 'rgba(0,0,0,0.1)'
-                }}>
-                    <Skeleton
-                        variant="rectangular"
-                        sx={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%'
-                        }}
-                    />
-                </Card>
-            </Grid>
+            <ListItem key={`skeleton-${index}`}>
+                <ListItemText primary={<Skeleton variant="text" />} />
+            </ListItem>
         ))
     }
 
     return (
         <Box sx={{ p: 2 }}>
-            {/* Create Review Button */}
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                    variant="contained"
-                    startIcon={<Add />}
-                    onClick={handleCreateReview}
-                    sx={{ textTransform: 'none' }}
-                >
-                    Create Review
-                </Button>
+            {/* Create Review Button and Search Section */}
+            <Box sx={{ mb: 3 }}>
+                {/* Search Section */}
+                <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    {/* Search Mode Toggle */}
+                    <ToggleButtonGroup
+                        value={searchMode}
+                        exclusive
+                        onChange={handleSearchModeChange}
+                        aria-label="search mode"
+                        size="small"
+                        sx={{ mb: 1 }}
+                    >
+                        <ToggleButton value="content" aria-label="search in title and description">
+                            <TitleIcon sx={{ mr: 1 }} />
+                            Title & Description
+                        </ToggleButton>
+                        <ToggleButton value="tags" aria-label="search by tags">
+                            <LocalOfferIcon sx={{ mr: 1 }} />
+                            Tags
+                        </ToggleButton>
+                    </ToggleButtonGroup>
+
+                    {/* Search Input */}
+                    <TextField
+                        fullWidth
+                        variant="outlined"
+                        placeholder={searchMode === 'tags'
+                            ? "Search by tags (e.g., technology gaming)"
+                            : "Search in titles and descriptions"}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon color="action" />
+                                </InputAdornment>
+                            ),
+                            sx: {
+                                bgcolor: 'background.paper',
+                                '&:hover': {
+                                    bgcolor: 'background.paper',
+                                },
+                            }
+                        }}
+                        sx={{
+                            maxWidth: '600px',
+                            width: '100%',
+                        }}
+                    />
+                </Box>
+
+                {/* Create Review Button */}
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                        variant="contained"
+                        startIcon={<Add />}
+                        onClick={handleCreateReview}
+                        sx={{ textTransform: 'none' }}
+                    >
+                        Create Review
+                    </Button>
+                </Box>
             </Box>
 
             {/* Count indicator */}
-            {reviews.length > 0 && (
+            {filteredReviews.length > 0 && (
                 <Box sx={{ width: '100%', mb: 2 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center' }}>
                         {isFetching ? 'Loading more reviews...' :
-                            !hasMore ? `Loaded all ${reviews.length} reviews` :
-                                `Loaded ${reviews.length} of ${totalReviews} reviews`}
+                            searchQuery.trim() ? `Found ${filteredReviews.length} matching reviews` :
+                                !hasMore ? `Loaded all ${reviews.length} reviews` :
+                                    `Loaded ${reviews.length} of ${totalReviews} reviews`}
                     </Typography>
                 </Box>
             )}
@@ -250,123 +319,109 @@ export default function LibraryView() {
                 </Box>
             )}
 
-            <Grid container spacing={2}>
-                {reviews.map((review) => (
-                    <Grid item xs={12} sm={6} md={4} key={review.id}>
-                        <Card
+            <List sx={{ width: '100%', bgcolor: 'background.paper', borderRadius: 1 }}>
+                {filteredReviews.map((review) => (
+                    <Paper
+                        key={review.id}
+                        sx={{
+                            mb: 2,
+                            overflow: 'hidden'
+                        }}
+                    >
+                        <ListItem
                             sx={{
-                                height: 0,
-                                paddingTop: '177.77%', // 9:16 aspect ratio (16/9 * 100)
-                                position: 'relative',
-                                cursor: 'pointer',
-                                bgcolor: 'rgba(0,0,0,0.1)',
-                                '&:hover': {
-                                    transform: 'scale(1.02)',
-                                    transition: 'transform 0.2s ease-in-out'
-                                }
+                                display: 'flex',
+                                flexDirection: { xs: 'column', sm: 'row' },
+                                alignItems: { xs: 'stretch', sm: 'center' },
+                                gap: 2,
+                                p: 2
                             }}
-                            onClick={() => handleReviewClick(review.id)}
                         >
-                            {review.video?.thumbnailUrl ? (
-                                <>
-                                    <CardMedia
+                            {/* Thumbnail */}
+                            {review.video?.thumbnailUrl && (
+                                <Box
+                                    sx={{
+                                        width: { xs: '100%', sm: '180px' },
+                                        height: { xs: '200px', sm: '100px' },
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        borderRadius: 1,
+                                        flexShrink: 0
+                                    }}
+                                >
+                                    <Box
                                         component="img"
-                                        image={review.video.thumbnailUrl}
-                                        alt={review.title || 'Review thumbnail'}
+                                        src={review.video.thumbnailUrl}
+                                        alt={review.title}
                                         sx={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
                                             width: '100%',
                                             height: '100%',
                                             objectFit: 'cover'
                                         }}
                                     />
-                                    {/* Title overlay at the top */}
-                                    <Box
-                                        sx={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%)',
-                                            padding: 2,
-                                            color: 'white'
-                                        }}
-                                    >
-                                        <Typography variant="subtitle1" noWrap>
-                                            {review.title}
-                                        </Typography>
-                                    </Box>
-                                    {/* Tags overlay at the bottom */}
-                                    {review.tags && review.tags.length > 0 && (
-                                        <Box
-                                            sx={{
-                                                position: 'absolute',
-                                                bottom: 0,
-                                                left: 0,
-                                                right: 0,
-                                                background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%)',
-                                                padding: 2,
-                                                display: 'flex',
-                                                flexWrap: 'wrap',
-                                                gap: 0.5
-                                            }}
-                                        >
-                                            {review.tags.slice(0, 3).map((tag, index) => (
-                                                <Chip
-                                                    key={index}
-                                                    label={tag}
-                                                    size="small"
-                                                    sx={{
-                                                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                                                        color: 'white',
-                                                        '&:hover': {
-                                                            backgroundColor: 'rgba(255, 255, 255, 0.3)'
-                                                        }
-                                                    }}
-                                                />
-                                            ))}
-                                            {review.tags.length > 3 && (
-                                                <Chip
-                                                    label={`+${review.tags.length - 3}`}
-                                                    size="small"
-                                                    sx={{
-                                                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                                                        color: 'white',
-                                                        '&:hover': {
-                                                            backgroundColor: 'rgba(255, 255, 255, 0.3)'
-                                                        }
-                                                    }}
-                                                />
-                                            )}
-                                        </Box>
-                                    )}
-                                </>
-                            ) : (
-                                <Box
-                                    sx={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        width: '100%',
-                                        height: '100%',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        bgcolor: 'background.paper'
-                                    }}
-                                >
-                                    <Typography variant="body2" color="text.secondary">
-                                        No thumbnail available
-                                    </Typography>
                                 </Box>
                             )}
-                        </Card>
-                    </Grid>
+
+                            {/* Content */}
+                            <Box sx={{ flex: 1 }}>
+                                <Typography variant="h6" gutterBottom>
+                                    {review.title || 'Untitled Review'}
+                                </Typography>
+
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                    Status: {review.status.replace(/_/g, ' ').toUpperCase()}
+                                </Typography>
+
+                                {review.description && (
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                            mb: 1
+                                        }}
+                                    >
+                                        {review.description}
+                                    </Typography>
+                                )}
+
+                                {/* Tags */}
+                                {review.tags && review.tags.length > 0 && (
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                                        {review.tags.map((tag, index) => (
+                                            <Chip
+                                                key={index}
+                                                label={tag}
+                                                size="small"
+                                                sx={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                }}
+                                            />
+                                        ))}
+                                    </Box>
+                                )}
+                            </Box>
+
+                            {/* Edit Button */}
+                            <Button
+                                variant="outlined"
+                                startIcon={<Edit />}
+                                onClick={() => handleReviewClick(review.id)}
+                                sx={{
+                                    alignSelf: { xs: 'stretch', sm: 'flex-start' },
+                                    mt: { xs: 1, sm: 0 }
+                                }}
+                            >
+                                Edit
+                            </Button>
+                        </ListItem>
+                    </Paper>
                 ))}
-                {renderSkeletons()}
-            </Grid>
+                {!searchQuery && renderSkeletons()}
+            </List>
         </Box>
     )
 }

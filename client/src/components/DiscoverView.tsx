@@ -1,8 +1,10 @@
-import { Box, Typography, Grid, Card, CardMedia, Skeleton, Chip, TextField, InputAdornment } from '@mui/material'
+import { Box, Typography, Grid, Card, CardMedia, Skeleton, Chip, TextField, InputAdornment, ToggleButtonGroup, ToggleButton } from '@mui/material'
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import SearchIcon from '@mui/icons-material/Search'
+import LocalOfferIcon from '@mui/icons-material/LocalOffer'
+import TitleIcon from '@mui/icons-material/Title'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 const PAGE_SIZE = 1
@@ -41,17 +43,35 @@ export default function DiscoverView() {
     const [hasMore, setHasMore] = useState(true)
     const [isFetching, setIsFetching] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
+    const [searchMode, setSearchMode] = useState<'tags' | 'content'>('content')
     const { token } = useAuth()
     const navigate = useNavigate()
 
-    // Filter reviews based on search query
+    // Filter reviews based on search query and mode
     const filteredReviews = reviews.filter(review => {
         if (!searchQuery.trim()) return true
         const searchTerms = searchQuery.toLowerCase().split(' ')
-        return searchTerms.every(term =>
-            review.tags?.some(tag => tag.toLowerCase().includes(term))
-        )
+
+        if (searchMode === 'tags') {
+            return searchTerms.every(term =>
+                review.tags?.some(tag => tag.toLowerCase().includes(term))
+            )
+        } else {
+            // Search in title and description
+            return searchTerms.every(term => {
+                const titleMatch = review.title?.toLowerCase().includes(term)
+                const descMatch = review.description?.toLowerCase().includes(term)
+                return titleMatch || descMatch
+            })
+        }
     })
+
+    const handleSearchModeChange = (_event: React.MouseEvent<HTMLElement>, newMode: 'tags' | 'content' | null) => {
+        if (newMode !== null) {
+            setSearchMode(newMode)
+            setSearchQuery('') // Clear search when changing modes
+        }
+    }
 
     // Fetch total count
     const fetchTotalCount = useCallback(async () => {
@@ -204,12 +224,34 @@ export default function DiscoverView() {
 
     return (
         <Box sx={{ p: 2 }}>
-            {/* Search Bar */}
-            <Box sx={{ mb: 3 }}>
+            {/* Search Section */}
+            <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                {/* Search Mode Toggle */}
+                <ToggleButtonGroup
+                    value={searchMode}
+                    exclusive
+                    onChange={handleSearchModeChange}
+                    aria-label="search mode"
+                    size="small"
+                    sx={{ mb: 1 }}
+                >
+                    <ToggleButton value="content" aria-label="search in title and description">
+                        <TitleIcon sx={{ mr: 1 }} />
+                        Title & Description
+                    </ToggleButton>
+                    <ToggleButton value="tags" aria-label="search by tags">
+                        <LocalOfferIcon sx={{ mr: 1 }} />
+                        Tags
+                    </ToggleButton>
+                </ToggleButtonGroup>
+
+                {/* Search Input */}
                 <TextField
                     fullWidth
                     variant="outlined"
-                    placeholder="Search by tags (e.g., technology gaming)"
+                    placeholder={searchMode === 'tags'
+                        ? "Search by tags (e.g., technology gaming)"
+                        : "Search in titles and descriptions"}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     InputProps={{
@@ -227,8 +269,7 @@ export default function DiscoverView() {
                     }}
                     sx={{
                         maxWidth: '600px',
-                        mx: 'auto',
-                        display: 'block',
+                        width: '100%',
                     }}
                 />
             </Box>
@@ -236,7 +277,7 @@ export default function DiscoverView() {
             {/* Count indicator */}
             {filteredReviews.length > 0 && (
                 <Box sx={{ width: '100%', mb: 2 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center' }}>
                         {isFetching ? 'Loading more reviews...' :
                             searchQuery.trim() ? `Found ${filteredReviews.length} matching reviews` :
                                 !hasMore ? `Loaded all ${reviews.length} reviews` :
