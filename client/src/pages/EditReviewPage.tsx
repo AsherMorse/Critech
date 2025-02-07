@@ -31,6 +31,7 @@ interface ReviewData {
     pros: string[]
     cons: string[]
     altLinks: AltLink[]
+    tags: string[]
 }
 
 export default function EditReviewPage() {
@@ -44,7 +45,8 @@ export default function EditReviewPage() {
         description: '',
         pros: [''],
         cons: [''],
-        altLinks: [{ name: '', url: '' }]
+        altLinks: [{ name: '', url: '' }],
+        tags: ['']
     })
 
     // Redirect to dashboard if no id is provided
@@ -82,7 +84,8 @@ export default function EditReviewPage() {
                     description: data.description || '',
                     pros: data.pros || [''],
                     cons: data.cons || [''],
-                    altLinks: data.altLinks || [{ name: '', url: '' }]
+                    altLinks: data.altLinks || [{ name: '', url: '' }],
+                    tags: data.tags || ['']
                 })
             } catch (error) {
                 console.error('Error fetching review:', error)
@@ -104,7 +107,7 @@ export default function EditReviewPage() {
             }
 
     const handleArrayChange =
-        (field: 'pros' | 'cons', index: number) =>
+        (field: 'pros' | 'cons' | 'tags', index: number) =>
             (event: React.ChangeEvent<HTMLInputElement>) => {
                 setFormData(prev => ({
                     ...prev,
@@ -114,14 +117,14 @@ export default function EditReviewPage() {
                 }))
             }
 
-    const addArrayItem = (field: 'pros' | 'cons') => {
+    const addArrayItem = (field: 'pros' | 'cons' | 'tags') => {
         setFormData(prev => ({
             ...prev,
             [field]: [...prev[field], '']
         }))
     }
 
-    const removeArrayItem = (field: 'pros' | 'cons', index: number) => {
+    const removeArrayItem = (field: 'pros' | 'cons' | 'tags', index: number) => {
         setFormData(prev => ({
             ...prev,
             [field]: prev[field].filter((_, i) => i !== index)
@@ -167,7 +170,8 @@ export default function EditReviewPage() {
             cons: formData.cons.filter(con => con.trim() !== ''),
             altLinks: formData.altLinks.filter(
                 link => link.name.trim() !== '' && link.url.trim() !== ''
-            )
+            ),
+            tags: formData.tags.filter(tag => tag.trim() !== '')
         }
 
         try {
@@ -386,6 +390,40 @@ export default function EditReviewPage() {
                         ))}
                         <Button startIcon={<AddIcon />} onClick={addAltLink}>
                             Add Alternative Link
+                        </Button>
+                    </Box>
+
+                    {/* Tags Section */}
+                    <Box sx={{ mt: 2 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Tags
+                        </Typography>
+                        {formData.tags.map((tag, index) => (
+                            <Box key={index} sx={{ mb: 2, display: 'flex', gap: 1 }}>
+                                <TextField
+                                    label={`Tag ${index + 1}`}
+                                    variant="outlined"
+                                    fullWidth
+                                    value={tag}
+                                    onChange={handleArrayChange('tags', index)}
+                                    placeholder="Enter a tag (e.g., technology, gaming, tutorial)"
+                                />
+                                <IconButton
+                                    onClick={() => removeArrayItem('tags', index)}
+                                    disabled={formData.tags.length === 1}
+                                    color="error"
+                                >
+                                    <DeleteIcon />
+                                </IconButton>
+                            </Box>
+                        ))}
+                        <Button
+                            startIcon={<AddIcon />}
+                            onClick={() => addArrayItem('tags')}
+                            variant="outlined"
+                            sx={{ mt: 1 }}
+                        >
+                            Add Tag
                         </Button>
                     </Box>
 

@@ -45,6 +45,7 @@ interface ReviewData {
     pros: string[];
     cons: string[];
     altLinks: AltLink[];
+    tags: string[];
 }
 
 export default function ReviewOptionsPage() {
@@ -59,7 +60,8 @@ export default function ReviewOptionsPage() {
         videoId: state?.videoId || '',
         pros: [''],
         cons: [''],
-        altLinks: [{ name: '', url: '' }]
+        altLinks: [{ name: '', url: '' }],
+        tags: ['']
     })
 
     // Redirect to dashboard if no videoId is provided
@@ -77,7 +79,7 @@ export default function ReviewOptionsPage() {
             }
 
     const handleArrayChange = (
-        field: 'pros' | 'cons',
+        field: 'pros' | 'cons' | 'tags',
         index: number
     ) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setFormData(prev => ({
@@ -100,14 +102,14 @@ export default function ReviewOptionsPage() {
         }))
     }
 
-    const addArrayItem = (field: 'pros' | 'cons') => () => {
+    const addArrayItem = (field: 'pros' | 'cons' | 'tags') => () => {
         setFormData(prev => ({
             ...prev,
             [field]: [...prev[field], '']
         }))
     }
 
-    const removeArrayItem = (field: 'pros' | 'cons', index: number) => () => {
+    const removeArrayItem = (field: 'pros' | 'cons' | 'tags', index: number) => () => {
         setFormData(prev => ({
             ...prev,
             [field]: prev[field].filter((_, i) => i !== index)
@@ -137,7 +139,8 @@ export default function ReviewOptionsPage() {
             ...formData,
             pros: formData.pros.filter(pro => pro.trim() !== ''),
             cons: formData.cons.filter(con => con.trim() !== ''),
-            altLinks: formData.altLinks.filter(link => link.name.trim() !== '' && link.url.trim() !== '')
+            altLinks: formData.altLinks.filter(link => link.name.trim() !== '' && link.url.trim() !== ''),
+            tags: formData.tags.filter(tag => tag.trim() !== '')
         }
 
         try {
@@ -155,7 +158,8 @@ export default function ReviewOptionsPage() {
                     description: cleanedData.description,
                     pros: cleanedData.pros,
                     cons: cleanedData.cons,
-                    altLinks: cleanedData.altLinks
+                    altLinks: cleanedData.altLinks,
+                    tags: cleanedData.tags
                 })
             })
 
@@ -316,6 +320,35 @@ export default function ReviewOptionsPage() {
                         ))}
                         <Button variant="outlined" onClick={addAltLink}>
                             Add Alternative Link
+                        </Button>
+
+                        <Divider sx={{ my: 2 }} />
+
+                        <Typography variant="h6" gutterBottom>
+                            Tags
+                        </Typography>
+                        {formData.tags.map((tag, index) => (
+                            <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                <TextField
+                                    label={`Tag ${index + 1}`}
+                                    variant="outlined"
+                                    fullWidth
+                                    value={tag}
+                                    onChange={handleArrayChange('tags', index)}
+                                    placeholder="Enter a tag (e.g., technology, gaming, tutorial)"
+                                />
+                                <Button
+                                    variant="outlined"
+                                    color="error"
+                                    onClick={removeArrayItem('tags', index)}
+                                    disabled={formData.tags.length === 1}
+                                >
+                                    Remove
+                                </Button>
+                            </Box>
+                        ))}
+                        <Button variant="outlined" onClick={addArrayItem('tags')}>
+                            Add Tag
                         </Button>
 
                         <Divider sx={{ my: 2 }} />

@@ -1,7 +1,8 @@
-import { Box, Typography, Grid, Card, CardMedia, CardContent, Skeleton } from '@mui/material'
+import { Box, Typography, Grid, Card, CardMedia, CardContent, Skeleton, Chip, Stack, TextField, InputAdornment } from '@mui/material'
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import SearchIcon from '@mui/icons-material/Search'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 const PAGE_SIZE = 1
@@ -39,8 +40,18 @@ export default function DiscoverView() {
     const [lastId, setLastId] = useState<number | undefined>(undefined)
     const [hasMore, setHasMore] = useState(true)
     const [isFetching, setIsFetching] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
     const { token } = useAuth()
     const navigate = useNavigate()
+
+    // Filter reviews based on search query
+    const filteredReviews = reviews.filter(review => {
+        if (!searchQuery.trim()) return true
+        const searchTerms = searchQuery.toLowerCase().split(' ')
+        return searchTerms.every(term =>
+            review.tags?.some(tag => tag.toLowerCase().includes(term))
+        )
+    })
 
     // Fetch total count
     const fetchTotalCount = useCallback(async () => {
@@ -193,13 +204,43 @@ export default function DiscoverView() {
 
     return (
         <Box sx={{ p: 2 }}>
+            {/* Search Bar */}
+            <Box sx={{ mb: 3 }}>
+                <TextField
+                    fullWidth
+                    variant="outlined"
+                    placeholder="Search by tags (e.g., technology gaming)"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon color="action" />
+                            </InputAdornment>
+                        ),
+                        sx: {
+                            bgcolor: 'background.paper',
+                            '&:hover': {
+                                bgcolor: 'background.paper',
+                            },
+                        }
+                    }}
+                    sx={{
+                        maxWidth: '600px',
+                        mx: 'auto',
+                        display: 'block',
+                    }}
+                />
+            </Box>
+
             {/* Count indicator */}
-            {reviews.length > 0 && (
+            {filteredReviews.length > 0 && (
                 <Box sx={{ width: '100%', mb: 2 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                         {isFetching ? 'Loading more reviews...' :
-                            !hasMore ? `Loaded all ${reviews.length} reviews` :
-                                `Loaded ${reviews.length} of ${totalReviews} reviews`}
+                            searchQuery.trim() ? `Found ${filteredReviews.length} matching reviews` :
+                                !hasMore ? `Loaded all ${reviews.length} reviews` :
+                                    `Loaded ${reviews.length} of ${totalReviews} reviews`}
                     </Typography>
                 </Box>
             )}
@@ -215,14 +256,16 @@ export default function DiscoverView() {
                 </Box>
             )}
 
-            {!loading && !error && reviews.length === 0 && (
+            {!loading && !error && filteredReviews.length === 0 && (
                 <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}>
-                    <Typography>No reviews available yet</Typography>
+                    <Typography>
+                        {searchQuery.trim() ? 'No reviews match your search' : 'No reviews available yet'}
+                    </Typography>
                 </Box>
             )}
 
             <Grid container spacing={2}>
-                {reviews.map((review) => (
+                {filteredReviews.map((review) => (
                     <Grid item xs={12} sm={6} md={4} key={review.id}>
                         <Card
                             sx={{
@@ -239,70 +282,104 @@ export default function DiscoverView() {
                             onClick={() => handleReviewClick(review.id)}
                         >
                             {review.video?.thumbnailUrl ? (
-                                <CardMedia
-                                    component="img"
-                                    image={review.video.thumbnailUrl}
-                                    alt={review.title || 'Review thumbnail'}
+                                <>
+                                    <CardMedia
+                                        component="img"
+                                        image={review.video.thumbnailUrl}
+                                        alt={review.title || 'Review thumbnail'}
+                                        sx={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover'
+                                        }}
+                                    />
+                                    {/* Title overlay at the top */}
+                                    <Box
+                                        sx={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%)',
+                                            padding: 2,
+                                            color: 'white'
+                                        }}
+                                    >
+                                        <Typography variant="subtitle1" noWrap>
+                                            {review.title}
+                                        </Typography>
+                                    </Box>
+                                    {/* Tags overlay at the bottom */}
+                                    {review.tags && review.tags.length > 0 && (
+                                        <Box
+                                            sx={{
+                                                position: 'absolute',
+                                                bottom: 0,
+                                                left: 0,
+                                                right: 0,
+                                                background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%)',
+                                                padding: 2,
+                                                display: 'flex',
+                                                flexWrap: 'wrap',
+                                                gap: 0.5
+                                            }}
+                                        >
+                                            {review.tags.slice(0, 3).map((tag, index) => (
+                                                <Chip
+                                                    key={index}
+                                                    label={tag}
+                                                    size="small"
+                                                    sx={{
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                                        color: 'white',
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                                                        }
+                                                    }}
+                                                />
+                                            ))}
+                                            {review.tags.length > 3 && (
+                                                <Chip
+                                                    label={`+${review.tags.length - 3}`}
+                                                    size="small"
+                                                    sx={{
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                                        color: 'white',
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                                                        }
+                                                    }}
+                                                />
+                                            )}
+                                        </Box>
+                                    )}
+                                </>
+                            ) : (
+                                <Box
                                     sx={{
                                         position: 'absolute',
                                         top: 0,
                                         left: 0,
                                         width: '100%',
                                         height: '100%',
-                                        objectFit: 'contain',
-                                        backgroundSize: 'contain'
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        bgcolor: 'background.paper'
                                     }}
-                                    onError={(e) => {
-                                        if (review.video?.thumbnailUrl) {
-                                            console.error('Failed to load thumbnail for review:', {
-                                                reviewId: review.id,
-                                                attemptedUrl: review.video.thumbnailUrl
-                                            })
-                                        }
-                                        const img = e.target as HTMLImageElement
-                                        img.src = '/placeholder-thumbnail.jpg'
-                                    }}
-                                />
-                            ) : (
-                                <Box sx={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}>
+                                >
                                     <Typography variant="body2" color="text.secondary">
-                                        Loading thumbnail...
+                                        No thumbnail available
                                     </Typography>
                                 </Box>
                             )}
-                            <CardContent
-                                sx={{
-                                    position: 'absolute',
-                                    bottom: 0,
-                                    left: 0,
-                                    right: 0,
-                                    background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
-                                    p: 1,
-                                    '&:last-child': { pb: 1 }
-                                }}
-                            >
-                                <Typography variant="subtitle1" sx={{ color: 'white', mb: 0.5 }}>
-                                    {review.title || 'Untitled Review'}
-                                </Typography>
-                                {review.description && (
-                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }} noWrap>
-                                        {review.description}
-                                    </Typography>
-                                )}
-                            </CardContent>
                         </Card>
                     </Grid>
                 ))}
-                {renderSkeletons()}
+                {!searchQuery && renderSkeletons()}
             </Grid>
         </Box>
     )
