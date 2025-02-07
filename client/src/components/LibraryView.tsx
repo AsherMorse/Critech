@@ -1,4 +1,4 @@
-import { Box, Typography, Grid, Card, CardMedia, CardContent, Button, Skeleton, Chip } from '@mui/material'
+import { Box, Typography, Grid, Card, CardMedia, Button, Skeleton, Chip } from '@mui/material'
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'

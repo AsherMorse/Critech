@@ -1,4 +1,4 @@
-import { Box, Typography, Grid, Card, CardMedia, CardContent, Skeleton, Chip, Stack, TextField, InputAdornment } from '@mui/material'
+import { Box, Typography, Grid, Card, CardMedia, Skeleton, Chip, TextField, InputAdornment } from '@mui/material'
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -239,8 +239,8 @@ export default function DiscoverView() {
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                         {isFetching ? 'Loading more reviews...' :
                             searchQuery.trim() ? `Found ${filteredReviews.length} matching reviews` :
-                            !hasMore ? `Loaded all ${reviews.length} reviews` :
-                                `Loaded ${reviews.length} of ${totalReviews} reviews`}
+                                !hasMore ? `Loaded all ${reviews.length} reviews` :
+                                    `Loaded ${reviews.length} of ${totalReviews} reviews`}
                     </Typography>
                 </Box>
             )}
@@ -283,16 +283,16 @@ export default function DiscoverView() {
                         >
                             {review.video?.thumbnailUrl ? (
                                 <>
-                                <CardMedia
-                                    component="img"
-                                    image={review.video.thumbnailUrl}
-                                    alt={review.title || 'Review thumbnail'}
-                                    sx={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        width: '100%',
-                                        height: '100%',
+                                    <CardMedia
+                                        component="img"
+                                        image={review.video.thumbnailUrl}
+                                        alt={review.title || 'Review thumbnail'}
+                                        sx={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
                                             objectFit: 'cover'
                                         }}
                                     />
@@ -360,13 +360,13 @@ export default function DiscoverView() {
                             ) : (
                                 <Box
                                     sx={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        display: 'flex',
+                                        alignItems: 'center',
                                         justifyContent: 'center',
                                         bgcolor: 'background.paper'
                                     }}
