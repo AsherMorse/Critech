@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Typography, Paper, ThemeProvider, createTheme, CircularProgress, Button } from '@mui/material'
-import { CloudUpload, Cancel } from '@mui/icons-material'
+import { CloudUpload } from '@mui/icons-material'
 import { useAuth } from '../contexts/AuthContext'
 
 const darkTheme = createTheme({
@@ -26,16 +26,6 @@ export default function CreateReviewPage() {
     const [uploadProgress, setUploadProgress] = useState(0)
     const [error, setError] = useState<string | null>(null)
     const xhrRef = useRef<XMLHttpRequest | null>(null)
-
-    const handleCancel = () => {
-        if (xhrRef.current) {
-            xhrRef.current.abort()
-            xhrRef.current = null
-        }
-        setIsUploading(false)
-        setUploadProgress(0)
-        navigate('/dashboard')
-    }
 
     const handleUpload = async (file: File) => {
         if (!file) return
