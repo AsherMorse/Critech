@@ -8,6 +8,9 @@ import { initializeCloudinary } from './config/cloudinary';
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Only update presets when explicitly requested via flag
+const shouldUpdatePresets = process.argv.includes('--update-presets');
+
 // Enable CORS
 const corsOptions = {
   origin: function (origin: any, callback: any) {
@@ -41,7 +44,14 @@ app.use(express.json());
 // Initialize server
 const startServer = async () => {
   try {
-    await initializeCloudinary();
+    // Log environment and preset update status
+    console.log(`Starting server in ${process.env.NODE_ENV || 'development'} mode`);
+    if (shouldUpdatePresets) {
+      console.log('Will update Cloudinary presets (--update-presets flag detected)');
+    }
+
+    // Initialize Cloudinary with the flag value
+    await initializeCloudinary(shouldUpdatePresets);
 
     // Mount routes
     app.use('/api/reviews', reviewsRouter);
