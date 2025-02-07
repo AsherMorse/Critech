@@ -16,6 +16,15 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
+// Basic Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true
+})
+
+// Constants
 export const UPLOAD_PRESETS = {
   REVIEW_VIDEO: 'review_video_upload',
   REVIEW_THUMBNAIL: 'review_thumbnail_upload'
@@ -90,20 +99,21 @@ export const VIDEO_PROFILES = {
   }
 } as const
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true
-})
-
-export const initializeCloudinary = async () => {
+export const initializeCloudinary = async (forceUpdatePresets: boolean = false) => {
   try {
     console.log('Initializing Cloudinary...')
-    console.log('Ensuring upload presets...')
-    await ensureUploadPresets()
-    console.log('Configuring CORS...')
-    await configureCors()
+
+    // Only update presets if we're in production or explicitly requested
+    if (process.env.NODE_ENV === 'production' || forceUpdatePresets) {
+      console.log('Ensuring upload presets...')
+      await ensureUploadPresets()
+      console.log('Configuring CORS...')
+      await configureCors()
+    } else {
+      console.log('Skipping preset configuration in development mode')
+      console.log('To force preset update, call initializeCloudinary(true)')
+    }
+
     console.log('Cloudinary initialization complete')
   } catch (error: any) {
     console.error('Error in initializeCloudinary:', error)
