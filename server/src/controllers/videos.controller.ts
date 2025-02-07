@@ -22,21 +22,10 @@ const generateThumbnailUrl = (publicId: string): string | undefined => {
   console.log('Starting thumbnail generation for public ID:', publicId)
   try {
     // Generate a high-quality image thumbnail from the video
-    const thumbnailUrl = cloudinaryV2.url(publicId, {
-      resource_type: 'video',
-      format: 'jpg',
-      transformation: [
-        {
-          width: 360,          // Width for 9:16 ratio
-          height: 640,         // Height for 9:16 ratio
-          crop: 'fill',
-          quality: 'auto:best',// Best quality
-          fetch_format: 'auto',// Optimize format for browser
-          video_sampling: 1,   // Take screenshot from first second
-          gravity: 'center'    // Center the crop
-        }
-      ]
-    })
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME
+    const transformations = 'c_fill,f_auto,g_center,h_640,q_auto:best,vs_1,w_360'
+    const thumbnailUrl = `https://res.cloudinary.com/${cloudName}/video/upload/${transformations}/v1/${publicId}.jpg`
+
     console.log('Successfully generated thumbnail URL:', thumbnailUrl)
     return thumbnailUrl
   } catch (error) {
