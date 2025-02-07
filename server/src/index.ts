@@ -19,8 +19,10 @@ const corsOptions = {
 
     const allowedOrigins = [
       'https://critech.ashermorse.org',
+      'https://localhost:4173',
       'http://localhost:5173',
-      'https://critechapi.ashermorse.org'
+      'https://critechpwa.ashermorse.org',
+      'https://critechapi.ashermorse.org',
     ];
 
     if (allowedOrigins.indexOf(origin) !== -1) {
