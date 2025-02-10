@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, Navigate } from 'react-router-dom'
-import { Box, Typography, TextField, Button, IconButton, Paper, ThemeProvider, createTheme, CircularProgress } from '@mui/material'
+import { Box, Typography, TextField, Button, IconButton, Paper, ThemeProvider, createTheme, CircularProgress, Grid, Divider } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { useAuth } from '../contexts/AuthContext'
+import TranscriptViewer from '../components/video/TranscriptViewer'
+import SummaryViewer from '../components/video/SummaryViewer'
 
 const darkTheme = createTheme({
     palette: {
@@ -32,6 +34,18 @@ interface ReviewData {
     cons: string[]
     altLinks: AltLink[]
     tags: string[]
+    videoId?: number
+    video?: {
+        videoUrl: string
+        thumbnailUrl?: string
+        cloudinaryId?: string
+        metadata?: {
+            aspectRatio?: string
+        }
+        transcript?: string
+        summary?: string
+        transcriptStatus?: 'pending' | 'processing' | 'completed' | 'failed'
+    }
 }
 
 export default function EditReviewPage() {
@@ -79,13 +93,40 @@ export default function EditReviewPage() {
                 }
 
                 const data = await response.json()
+
+                // If we have a videoId, fetch the transcript data
+                if (data.videoId) {
+                    try {
+                        const transcriptResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/videos/${data.videoId}/transcript`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/json'
+                            }
+                        })
+
+                        if (transcriptResponse.ok) {
+                            const transcriptData = await transcriptResponse.json()
+                            data.video = {
+                                ...data.video,
+                                transcript: transcriptData.transcript,
+                                summary: transcriptData.summary,
+                                transcriptStatus: transcriptData.status
+                            }
+                        }
+                    } catch (transcriptError) {
+                        console.error('Error fetching transcript:', transcriptError)
+                    }
+                }
+
                 setFormData({
                     title: data.title || '',
                     description: data.description || '',
                     pros: data.pros || [''],
                     cons: data.cons || [''],
                     altLinks: data.altLinks || [{ name: '', url: '' }],
-                    tags: data.tags || ['']
+                    tags: data.tags || [''],
+                    videoId: data.videoId,
+                    video: data.video
                 })
             } catch (error) {
                 console.error('Error fetching review:', error)
@@ -223,10 +264,7 @@ export default function EditReviewPage() {
                 sx={{
                     minHeight: '100vh',
                     bgcolor: 'background.default',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    p: 2
+                    p: 4
                 }}
             >
                 <Paper
@@ -235,7 +273,8 @@ export default function EditReviewPage() {
                     onSubmit={handleSubmit}
                     sx={{
                         width: '100%',
-                        maxWidth: '800px',
+                        maxWidth: '1200px',
+                        mx: 'auto',
                         p: 4,
                         borderRadius: '16px',
                         bgcolor: 'background.paper',
@@ -258,176 +297,182 @@ export default function EditReviewPage() {
                         </Typography>
                     )}
 
-                    <TextField
-                        label="Title"
-                        value={formData.title}
-                        onChange={handleInputChange('title')}
-                        required
-                        fullWidth
-                        error={!!error}
-                    />
+                    <Grid container spacing={4}>
+                        {/* Form Fields Column */}
+                        <Grid item xs={12} md={7}>
+                            {/* Title */}
+                            <TextField
+                                fullWidth
+                                label="Title"
+                                value={formData.title}
+                                onChange={handleInputChange('title')}
+                                sx={{ mb: 3 }}
+                            />
 
-                    <TextField
-                        label="Description"
-                        value={formData.description}
-                        onChange={handleInputChange('description')}
-                        multiline
-                        rows={4}
-                        required
-                        fullWidth
-                        error={!!error}
-                    />
+                            {/* Description */}
+                            <TextField
+                                fullWidth
+                                label="Description"
+                                multiline
+                                rows={4}
+                                value={formData.description}
+                                onChange={handleInputChange('description')}
+                                sx={{ mb: 3 }}
+                            />
 
-                    {/* Pros Section */}
-                    <Box>
-                        <Typography variant="h6" gutterBottom>
-                            Pros
-                        </Typography>
-                        {formData.pros.map((pro, index) => (
-                            <Box
-                                key={index}
+                            {/* Pros */}
+                            <Typography variant="h6" gutterBottom>
+                                Pros
+                            </Typography>
+                            {formData.pros.map((pro, index) => (
+                                <Box key={index} sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                                    <TextField
+                                        fullWidth
+                                        value={pro}
+                                        onChange={handleArrayChange('pros', index)}
+                                        placeholder={`Pro ${index + 1}`}
+                                    />
+                                    <IconButton
+                                        onClick={() => removeArrayItem('pros', index)}
+                                        color="error"
+                                    >
+                                        <DeleteIcon />
+                                    </IconButton>
+                                </Box>
+                            ))}
+                            <Button
+                                startIcon={<AddIcon />}
+                                onClick={() => addArrayItem('pros')}
+                                sx={{ mb: 3 }}
+                            >
+                                Add Pro
+                            </Button>
+
+                            {/* Cons */}
+                            <Typography variant="h6" gutterBottom>
+                                Cons
+                            </Typography>
+                            {formData.cons.map((con, index) => (
+                                <Box key={index} sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                                    <TextField
+                                        fullWidth
+                                        value={con}
+                                        onChange={handleArrayChange('cons', index)}
+                                        placeholder={`Con ${index + 1}`}
+                                    />
+                                    <IconButton
+                                        onClick={() => removeArrayItem('cons', index)}
+                                        color="error"
+                                    >
+                                        <DeleteIcon />
+                                    </IconButton>
+                                </Box>
+                            ))}
+                            <Button
+                                startIcon={<AddIcon />}
+                                onClick={() => addArrayItem('cons')}
+                                sx={{ mb: 3 }}
+                            >
+                                Add Con
+                            </Button>
+
+                            {/* Alternative Links */}
+                            <Typography variant="h6" gutterBottom>
+                                Alternative Links
+                            </Typography>
+                            {formData.altLinks.map((link, index) => (
+                                <Box key={index} sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                                    <TextField
+                                        label="Name"
+                                        value={link.name}
+                                        onChange={handleAltLinkChange(index, 'name')}
+                                        sx={{ flex: 1 }}
+                                    />
+                                    <TextField
+                                        label="URL"
+                                        value={link.url}
+                                        onChange={handleAltLinkChange(index, 'url')}
+                                        sx={{ flex: 2 }}
+                                    />
+                                    <IconButton
+                                        onClick={() => removeAltLink(index)}
+                                        color="error"
+                                    >
+                                        <DeleteIcon />
+                                    </IconButton>
+                                </Box>
+                            ))}
+                            <Button
+                                startIcon={<AddIcon />}
+                                onClick={addAltLink}
+                                sx={{ mb: 3 }}
+                            >
+                                Add Link
+                            </Button>
+
+                            {/* Tags */}
+                            <Typography variant="h6" gutterBottom>
+                                Tags
+                            </Typography>
+                            {formData.tags.map((tag, index) => (
+                                <Box key={index} sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                                    <TextField
+                                        fullWidth
+                                        value={tag}
+                                        onChange={handleArrayChange('tags', index)}
+                                        placeholder={`Tag ${index + 1}`}
+                                    />
+                                    <IconButton
+                                        onClick={() => removeArrayItem('tags', index)}
+                                        color="error"
+                                    >
+                                        <DeleteIcon />
+                                    </IconButton>
+                                </Box>
+                            ))}
+                            <Button
+                                startIcon={<AddIcon />}
+                                onClick={() => addArrayItem('tags')}
+                                sx={{ mb: 3 }}
+                            >
+                                Add Tag
+                            </Button>
+                        </Grid>
+
+                        {/* Transcript and Summary Column */}
+                        <Grid item xs={12} md={5}>
+                            <Paper
+                                elevation={1}
                                 sx={{
-                                    display: 'flex',
-                                    gap: 1,
-                                    mb: 1
+                                    p: 3,
+                                    bgcolor: 'background.paper',
+                                    borderRadius: 2
                                 }}
                             >
-                                <TextField
-                                    value={pro}
-                                    onChange={handleArrayChange('pros', index)}
-                                    fullWidth
-                                    placeholder={`Pro ${index + 1}`}
-                                    error={!!error}
-                                />
-                                <IconButton
-                                    onClick={() => removeArrayItem('pros', index)}
-                                    color="error"
-                                >
-                                    <DeleteIcon />
-                                </IconButton>
-                            </Box>
-                        ))}
-                        <Button
-                            startIcon={<AddIcon />}
-                            onClick={() => addArrayItem('pros')}
-                        >
-                            Add Pro
-                        </Button>
-                    </Box>
+                                <Typography variant="h6" gutterBottom>
+                                    Video Analysis
+                                </Typography>
+                                <Divider sx={{ mb: 2 }} />
 
-                    {/* Cons Section */}
-                    <Box>
-                        <Typography variant="h6" gutterBottom>
-                            Cons
-                        </Typography>
-                        {formData.cons.map((con, index) => (
-                            <Box
-                                key={index}
-                                sx={{
-                                    display: 'flex',
-                                    gap: 1,
-                                    mb: 1
-                                }}
-                            >
-                                <TextField
-                                    value={con}
-                                    onChange={handleArrayChange('cons', index)}
-                                    fullWidth
-                                    placeholder={`Con ${index + 1}`}
-                                    error={!!error}
-                                />
-                                <IconButton
-                                    onClick={() => removeArrayItem('cons', index)}
-                                    color="error"
-                                >
-                                    <DeleteIcon />
-                                </IconButton>
-                            </Box>
-                        ))}
-                        <Button
-                            startIcon={<AddIcon />}
-                            onClick={() => addArrayItem('cons')}
-                        >
-                            Add Con
-                        </Button>
-                    </Box>
+                                {formData.videoId ? (
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                        <SummaryViewer videoId={formData.videoId.toString()} />
+                                        <TranscriptViewer
+                                            videoId={formData.videoId.toString()}
+                                            maxHeight="400px"
+                                        />
+                                    </Box>
+                                ) : (
+                                    <Typography color="text.secondary">
+                                        No video associated with this review.
+                                    </Typography>
+                                )}
+                            </Paper>
+                        </Grid>
+                    </Grid>
 
-                    {/* Alternative Links Section */}
-                    <Box>
-                        <Typography variant="h6" gutterBottom>
-                            Alternative Links
-                        </Typography>
-                        {formData.altLinks.map((link, index) => (
-                            <Box
-                                key={index}
-                                sx={{
-                                    display: 'flex',
-                                    gap: 1,
-                                    mb: 1
-                                }}
-                            >
-                                <TextField
-                                    value={link.name}
-                                    onChange={handleAltLinkChange(index, 'name')}
-                                    placeholder="Link Name"
-                                    sx={{ flex: 1 }}
-                                    error={!!error}
-                                />
-                                <TextField
-                                    value={link.url}
-                                    onChange={handleAltLinkChange(index, 'url')}
-                                    placeholder="URL"
-                                    sx={{ flex: 2 }}
-                                    error={!!error}
-                                />
-                                <IconButton
-                                    onClick={() => removeAltLink(index)}
-                                    color="error"
-                                >
-                                    <DeleteIcon />
-                                </IconButton>
-                            </Box>
-                        ))}
-                        <Button startIcon={<AddIcon />} onClick={addAltLink}>
-                            Add Alternative Link
-                        </Button>
-                    </Box>
-
-                    {/* Tags Section */}
-                    <Box sx={{ mt: 2 }}>
-                        <Typography variant="h6" gutterBottom>
-                            Tags
-                        </Typography>
-                        {formData.tags.map((tag, index) => (
-                            <Box key={index} sx={{ mb: 2, display: 'flex', gap: 1 }}>
-                                <TextField
-                                    label={`Tag ${index + 1}`}
-                                    variant="outlined"
-                                    fullWidth
-                                    value={tag}
-                                    onChange={handleArrayChange('tags', index)}
-                                    placeholder="Enter a tag (e.g., technology, gaming, tutorial)"
-                                />
-                                <IconButton
-                                    onClick={() => removeArrayItem('tags', index)}
-                                    disabled={formData.tags.length === 1}
-                                    color="error"
-                                >
-                                    <DeleteIcon />
-                                </IconButton>
-                            </Box>
-                        ))}
-                        <Button
-                            startIcon={<AddIcon />}
-                            onClick={() => addArrayItem('tags')}
-                            variant="outlined"
-                            sx={{ mt: 1 }}
-                        >
-                            Add Tag
-                        </Button>
-                    </Box>
-
-                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                    {/* Action Buttons */}
+                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 4 }}>
                         <Button
                             variant="outlined"
                             onClick={() => navigate('/dashboard')}
@@ -435,11 +480,11 @@ export default function EditReviewPage() {
                             Cancel
                         </Button>
                         <Button
-                            type="submit"
                             variant="contained"
+                            type="submit"
                             disabled={isLoading}
                         >
-                            {isLoading ? <CircularProgress size={24} /> : 'Save Changes'}
+                            {isLoading ? 'Saving...' : 'Save Changes'}
                         </Button>
                     </Box>
                 </Paper>

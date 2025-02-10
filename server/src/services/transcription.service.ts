@@ -55,7 +55,7 @@ class TranscriptionService {
     // Generate summary using GPT-4 Turbo
     private async generateSummary(transcript: string): Promise<string> {
         const response = await this.openai.chat.completions.create({
-            model: 'gpt-4-turbo-preview',
+            model: 'gpt-4o-mini',
             messages: [
                 {
                     role: "system",
