@@ -34,6 +34,7 @@ export default function SummaryViewer({ videoId }: SummaryViewerProps) {
     useEffect(() => {
         const fetchSummary = async () => {
             try {
+                console.log('SummaryViewer: Starting fetch for videoId:', videoId);
                 setLoading(true);
                 const response = await fetch(`/api/videos/${videoId}/transcript`, {
                     headers: {
@@ -41,12 +42,17 @@ export default function SummaryViewer({ videoId }: SummaryViewerProps) {
                         'Accept': 'application/json'
                     }
                 });
+                console.log('SummaryViewer: Response status:', response.status);
                 if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('SummaryViewer: Error response:', errorText);
                     throw new Error('Failed to fetch summary');
                 }
                 const data = await response.json();
+                console.log('SummaryViewer: Successfully fetched data');
                 setTranscriptData(data);
             } catch (err) {
+                console.error('SummaryViewer: Fetch error:', err);
                 setError(err instanceof Error ? err.message : 'An error occurred');
             } finally {
                 setLoading(false);

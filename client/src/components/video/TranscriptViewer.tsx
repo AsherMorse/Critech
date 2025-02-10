@@ -39,6 +39,7 @@ export default function TranscriptViewer({ videoId, maxHeight = '500px' }: Trans
     useEffect(() => {
         const fetchTranscript = async () => {
             try {
+                console.log('TranscriptViewer: Starting fetch for videoId:', videoId);
                 setLoading(true);
                 const response = await fetch(`/api/videos/${videoId}/transcript`, {
                     headers: {
@@ -46,12 +47,17 @@ export default function TranscriptViewer({ videoId, maxHeight = '500px' }: Trans
                         'Accept': 'application/json'
                     }
                 });
+                console.log('TranscriptViewer: Response status:', response.status);
                 if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('TranscriptViewer: Error response:', errorText);
                     throw new Error('Failed to fetch transcript');
                 }
                 const data = await response.json();
+                console.log('TranscriptViewer: Successfully fetched data');
                 setTranscriptData(data);
             } catch (err) {
+                console.error('TranscriptViewer: Fetch error:', err);
                 setError(err instanceof Error ? err.message : 'An error occurred');
             } finally {
                 setLoading(false);
