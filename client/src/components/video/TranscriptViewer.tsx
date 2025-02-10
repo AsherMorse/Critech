@@ -44,8 +44,10 @@ export default function TranscriptViewer({ videoId, maxHeight = '500px' }: Trans
                 const response = await fetch(`/api/videos/${videoId}/transcript`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    method: 'GET'
                 });
                 console.log('TranscriptViewer: Response status:', response.status);
 

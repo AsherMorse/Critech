@@ -39,8 +39,10 @@ export default function SummaryViewer({ videoId }: SummaryViewerProps) {
                 const response = await fetch(`/api/videos/${videoId}/transcript`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    method: 'GET'
                 });
                 console.log('SummaryViewer: Response status:', response.status);
 
