@@ -12,7 +12,7 @@ const port = process.env.PORT || 3000;
 // Only update presets when explicitly requested via flag
 const shouldUpdatePresets = process.argv.includes('--update-presets');
 
-// Enable CORS
+// Enable CORS with more comprehensive options
 const corsOptions = {
   origin: function (origin: any, callback: any) {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -31,9 +31,11 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
-  credentials: true
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'Origin', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  credentials: true,
+  maxAge: 86400 // 24 hours
 };
 
 app.use(cors(corsOptions));
@@ -41,7 +43,9 @@ app.use(cors(corsOptions));
 // Handle preflight requests
 app.options('*', cors(corsOptions));
 
-app.use(express.json());
+// Configure body size limits
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 // Initialize server
 const startServer = async () => {

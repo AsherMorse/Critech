@@ -6,7 +6,15 @@ import { verifyAuth } from '../middleware/auth'
 import { RequestHandler } from 'express'
 
 const router = Router()
-const upload = multer({ storage: multer.memoryStorage() })
+
+// Configure multer with size limits
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB in bytes
+    files: 1 // Only allow 1 file per request
+  }
+})
 
 // Apply auth middleware to all routes except webhook
 router.use((req: Request, res: Response, next: NextFunction) => {
