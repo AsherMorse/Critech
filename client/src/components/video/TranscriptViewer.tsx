@@ -15,6 +15,7 @@ import {
     ExpandMore as ExpandMoreIcon,
     ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface TranscriptViewerProps {
     videoId: string;
@@ -33,12 +34,18 @@ export default function TranscriptViewer({ videoId, maxHeight = '500px' }: Trans
     const [isExpanded, setIsExpanded] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
+    const { token } = useAuth();
 
     useEffect(() => {
         const fetchTranscript = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`/api/videos/${videoId}/transcript`);
+                const response = await fetch(`/api/videos/${videoId}/transcript`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
                 if (!response.ok) {
                     throw new Error('Failed to fetch transcript');
                 }
@@ -52,7 +59,7 @@ export default function TranscriptViewer({ videoId, maxHeight = '500px' }: Trans
         };
 
         fetchTranscript();
-    }, [videoId]);
+    }, [videoId, token]);
 
     const highlightSearchResults = (text: string) => {
         if (!searchQuery.trim()) return text;

@@ -12,6 +12,7 @@ import {
     ExpandMore as ExpandMoreIcon,
     ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SummaryViewerProps {
     videoId: string;
@@ -28,12 +29,18 @@ export default function SummaryViewer({ videoId }: SummaryViewerProps) {
     const [error, setError] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState(true);
     const [loading, setLoading] = useState(true);
+    const { token } = useAuth();
 
     useEffect(() => {
         const fetchSummary = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`/api/videos/${videoId}/transcript`);
+                const response = await fetch(`/api/videos/${videoId}/transcript`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
                 if (!response.ok) {
                     throw new Error('Failed to fetch summary');
                 }
@@ -47,7 +54,7 @@ export default function SummaryViewer({ videoId }: SummaryViewerProps) {
         };
 
         fetchSummary();
-    }, [videoId]);
+    }, [videoId, token]);
 
     if (loading) {
         return (
@@ -112,6 +119,7 @@ export default function SummaryViewer({ videoId }: SummaryViewerProps) {
                     }}
                 >
                     <Typography
+                        component="div"
                         sx={{
                             fontSize: '1rem',
                             lineHeight: 1.6,
@@ -119,7 +127,16 @@ export default function SummaryViewer({ videoId }: SummaryViewerProps) {
                         }}
                     >
                         {transcriptData.summary.split('\n').map((paragraph, index) => (
-                            <p key={index}>{paragraph}</p>
+                            <Typography
+                                key={index}
+                                component="div"
+                                sx={{
+                                    mt: index === 0 ? 0 : 1,
+                                    mb: index === transcriptData.summary.split('\n').length - 1 ? 0 : 1
+                                }}
+                            >
+                                {paragraph}
+                            </Typography>
                         ))}
                     </Typography>
                 </Box>
