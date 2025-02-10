@@ -26,7 +26,12 @@ export const verifyAuth = async (req: Request, res: Response, next: NextFunction
         const { data: { user }, error } = await supabase.auth.getUser(token)
 
         if (error) {
-            console.error('Supabase auth error:', error);
+            console.error('Supabase auth error details:', {
+                message: error.message,
+                status: error.status,
+                name: error.name,
+                stack: error.stack
+            });
             return res.status(401).json({ message: 'Invalid token', error: error.message })
         }
 
@@ -34,6 +39,8 @@ export const verifyAuth = async (req: Request, res: Response, next: NextFunction
             console.error('No user found for token');
             return res.status(401).json({ message: 'Invalid token' })
         }
+
+        console.log('Successfully authenticated user:', user.email);
 
         req.user = {
             id: user.id,
