@@ -30,6 +30,7 @@ export const videos = pgTable('videos', {
   }>(),
   // New transcript-related columns
   transcript: text('transcript'),  // Store the actual transcript text
+  summary: text('summary'),  // Store the AI-generated summary
   transcriptStatus: varchar('transcript_status', { length: 50 }).notNull().default('pending').$type<TranscriptStatus>(), // Track transcription status
   secure: boolean('secure').default(true), // Use HTTPS URLs
   createdAt: timestamp('created_at').defaultNow().notNull(),
