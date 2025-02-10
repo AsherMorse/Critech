@@ -43,6 +43,12 @@ export default function SummaryViewer({ videoId }: SummaryViewerProps) {
                     }
                 });
                 console.log('SummaryViewer: Response status:', response.status);
+
+                // Clone the response and log the raw text
+                const responseClone = response.clone();
+                const rawText = await responseClone.text();
+                console.log('SummaryViewer: Raw response:', rawText);
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('SummaryViewer: Error response:', errorText);
