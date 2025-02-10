@@ -3,6 +3,9 @@ import { pgTable, serial, text, varchar, jsonb, timestamp, integer, boolean } fr
 // Review status type
 export type ReviewStatus = 'video_uploaded' | 'draft' | 'in_review' | 'published' | 'archived' | 'deleted'
 
+// Transcript status type
+export type TranscriptStatus = 'pending' | 'processing' | 'completed' | 'failed'
+
 // Videos table to store video metadata
 export const videos = pgTable('videos', {
   id: serial('id').primaryKey(),
@@ -25,6 +28,9 @@ export const videos = pgTable('videos', {
     rotation: number | null
     quality: number | null
   }>(),
+  // New transcript-related columns
+  transcript: text('transcript'),  // Store the actual transcript text
+  transcriptStatus: varchar('transcript_status', { length: 50 }).notNull().default('pending').$type<TranscriptStatus>(), // Track transcription status
   secure: boolean('secure').default(true), // Use HTTPS URLs
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
