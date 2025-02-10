@@ -2,7 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "${VITE_API_URL}/api/:path*"
+      "destination": "${VITE_API_URL}/api/:path*",
+      "headers": {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      }
     },
     {
       "source": "/(.*)",
