@@ -700,3 +700,41 @@ Response:
 - 400: Missing required fields
 - 404: Review not found
 - 500: Server error 
+
+### Get Video Transcript
+```http
+GET /videos/:id/transcript
+```
+
+Query Parameters:
+```ts
+{
+  statusOnly?: boolean  // If true, returns only the transcription status
+}
+```
+
+Response (Full Transcript):
+```ts
+{
+  transcript: string,
+  summary: string,    // AI-generated summary of the transcript
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+}
+```
+
+Response (Status Only):
+```ts
+{
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+}
+```
+
+Error Response:
+```ts
+{
+  error: {
+    code: string,
+    message: string  // e.g., "Transcript not found"
+  }
+}
+``` 

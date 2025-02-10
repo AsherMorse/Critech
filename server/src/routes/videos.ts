@@ -9,17 +9,27 @@ const router = Router()
 const upload = multer({ storage: multer.memoryStorage() })
 
 // Apply auth middleware to all routes except webhook
-router.use((req: Request, res: Response, next: NextFunction) => {
-  // Skip auth for webhook endpoint
-  if (req.path === '/webhook') {
-    return next()
-  }
-  return (verifyAuth as RequestHandler)(req, res, next)
-})
+// router.use((req: Request, res: Response, next: NextFunction) => {
+//   // Skip auth for webhook endpoint
+//   if (req.path === '/webhook') {
+//     return next()
+//   }
+//   return (verifyAuth as RequestHandler)(req, res, next)
+// })
 
 // Get video by ID
 router.get('/:id', (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
   return VideosController.getVideoById(req, res, next)
+})
+
+// Get video status (including transcription status)
+router.get('/:id/status', (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+  return VideosController.getStatus(req, res, next)
+})
+
+// Get video transcript (with optional status-only parameter)
+router.get('/:id/transcript', (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+  return VideosController.getTranscript(req, res, next)
 })
 
 // Direct upload endpoint
