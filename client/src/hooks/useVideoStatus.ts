@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 export interface VideoStatus {
     status: {
@@ -38,11 +39,20 @@ export function useVideoStatus(
     const [status, setStatus] = useState<VideoStatus | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const { token } = useAuth();
 
     const fetchStatus = async () => {
         try {
-            const response = await fetch(`/api/videos/${videoId}/status`);
+            console.log('Fetching status with token:', token?.substring(0, 10) + '...');
+            const response = await fetch(`/api/videos/${videoId}/status`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Status response error:', response.status, errorText);
                 throw new Error('Failed to fetch video status');
             }
             const data = await response.json();
@@ -109,7 +119,7 @@ export function useVideoStatus(
                 clearTimeout(pollTimer);
             }
         };
-    }, [videoId, pollingInterval, onComplete, stopPollingOn.join(',')]);
+    }, [videoId, pollingInterval, onComplete, stopPollingOn.join(','), token]);
 
     return {
         status,
