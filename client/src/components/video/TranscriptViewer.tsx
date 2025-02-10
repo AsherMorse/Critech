@@ -48,6 +48,12 @@ export default function TranscriptViewer({ videoId, maxHeight = '500px' }: Trans
                     }
                 });
                 console.log('TranscriptViewer: Response status:', response.status);
+
+                // Clone the response and log the raw text
+                const responseClone = response.clone();
+                const rawText = await responseClone.text();
+                console.log('TranscriptViewer: Raw response:', rawText);
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('TranscriptViewer: Error response:', errorText);
