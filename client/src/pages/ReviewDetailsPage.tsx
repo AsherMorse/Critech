@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Box, Typography, Container, Paper, Chip, List, ListItem, ListItemText, Divider, ThemeProvider, createTheme, IconButton } from '@mui/material'
+import { Box, Typography, Container, Paper, Chip, List, ListItem, ListItemText, Divider, ThemeProvider, createTheme, IconButton, Grid } from '@mui/material'
 import { ArrowBack } from '@mui/icons-material'
 import { useAuth } from '../contexts/AuthContext'
+import TranscriptViewer from '../components/video/TranscriptViewer'
+import SummaryViewer from '../components/video/SummaryViewer'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
@@ -47,6 +49,9 @@ interface Review {
         metadata?: {
             aspectRatio?: string
         }
+        transcript?: string
+        summary?: string
+        transcriptStatus?: 'pending' | 'processing' | 'completed' | 'failed'
     }
 }
 
@@ -175,60 +180,81 @@ export default function ReviewDetailsPage() {
                             </Typography>
                         </Box>
 
-                        {/* Video Player */}
-                        <Paper
-                            sx={{
-                                width: '100%',
-                                maxWidth: '640px',
-                                margin: '0 auto',
-                                aspectRatio: '9/16',
-                                mb: 3,
-                                bgcolor: 'background.paper',
-                                overflow: 'hidden'
-                            }}
-                        >
-                            {review.video?.videoUrl ? (
-                                <Box
-                                    component="video"
-                                    autoPlay
-                                    loop
-                                    playsInline
-                                    src={review.video.videoUrl}
-                                    onClick={(e) => {
-                                        const video = e.target as HTMLVideoElement
-                                        video.currentTime = 0
-                                        video.play()
-                                    }}
+                        {/* Video Player and Transcript Section */}
+                        <Grid container spacing={3}>
+                            {/* Video Player Column */}
+                            <Grid item xs={12} md={6}>
+                                <Paper
                                     sx={{
                                         width: '100%',
-                                        height: '100%',
-                                        objectFit: 'contain',
-                                        backgroundColor: '#000',
-                                        cursor: 'pointer'
+                                        aspectRatio: '9/16',
+                                        mb: { xs: 3, md: 0 },
+                                        bgcolor: 'background.paper',
+                                        overflow: 'hidden'
                                     }}
                                 >
-                                    <Typography sx={{ color: 'white', p: 2 }}>
-                                        Your browser does not support the video tag.
-                                    </Typography>
+                                    {review.video?.videoUrl ? (
+                                        <Box
+                                            component="video"
+                                            autoPlay
+                                            loop
+                                            playsInline
+                                            src={review.video.videoUrl}
+                                            onClick={(e) => {
+                                                const video = e.target as HTMLVideoElement
+                                                video.currentTime = 0
+                                                video.play()
+                                            }}
+                                            sx={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'contain',
+                                                backgroundColor: '#000',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            <Typography sx={{ color: 'white', p: 2 }}>
+                                                Your browser does not support the video tag.
+                                            </Typography>
+                                        </Box>
+                                    ) : (
+                                        <Box sx={{
+                                            height: '100%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            flexDirection: 'column',
+                                            gap: 1,
+                                            p: 2
+                                        }}>
+                                            <Typography variant="h6">Video Unavailable</Typography>
+                                            <Typography variant="body2" color="text.secondary" align="center">
+                                                The video could not be loaded.
+                                                {review.status === 'draft' && ' This review is still in draft mode.'}
+                                            </Typography>
+                                        </Box>
+                                    )}
+                                </Paper>
+                            </Grid>
+
+                            {/* Transcript and Summary Column */}
+                            <Grid item xs={12} md={6}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                    {/* Summary Section */}
+                                    {review.videoId && (
+                                        <SummaryViewer videoId={review.videoId.toString()} />
+                                    )}
+
+                                    {/* Transcript Section */}
+                                    {review.videoId && (
+                                        <TranscriptViewer
+                                            videoId={review.videoId.toString()}
+                                            maxHeight="400px"
+                                        />
+                                    )}
                                 </Box>
-                            ) : (
-                                <Box sx={{
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexDirection: 'column',
-                                    gap: 1,
-                                    p: 2
-                                }}>
-                                    <Typography variant="h6">Video Unavailable</Typography>
-                                    <Typography variant="body2" color="text.secondary" align="center">
-                                        The video could not be loaded.
-                                        {review.status === 'draft' && ' This review is still in draft mode.'}
-                                    </Typography>
-                                </Box>
-                            )}
-                        </Paper>
+                            </Grid>
+                        </Grid>
 
                         {/* Review Details */}
                         <Paper sx={{ p: 3, mb: 3, bgcolor: 'background.paper' }}>

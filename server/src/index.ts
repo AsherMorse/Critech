@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import reviewsRouter from './routes/reviews';
 import videosRouter from './routes/videos';
+import openaiRouter from './routes/openai';
 import { errorHandler } from './middleware/error-handler';
 import { initializeCloudinary } from './config/cloudinary';
 
@@ -58,6 +59,7 @@ const startServer = async () => {
     // Mount routes
     app.use('/api/reviews', reviewsRouter);
     app.use('/api/videos', videosRouter);
+    app.use('/api/openai', openaiRouter);
 
     app.get('/', (req, res) => {
       res.json({ message: 'Welcome to Critech API' });
