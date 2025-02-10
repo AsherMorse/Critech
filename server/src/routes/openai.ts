@@ -7,7 +7,7 @@ import { RequestHandler } from 'express'
 const router = Router()
 
 // Apply auth middleware to all routes
-// router.use(verifyAuth as RequestHandler)
+router.use(verifyAuth as RequestHandler)
 
 // Simple test endpoint
 router.get('/list-models', async (req: Request, res: Response, next: NextFunction) => {
