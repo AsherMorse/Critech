@@ -43,6 +43,7 @@ export function useVideoStatus(
 
     const fetchStatus = async () => {
         try {
+            console.log('Fetching status with token:', token?.substring(0, 10) + '...');
             const response = await fetch(`/api/videos/${videoId}/status`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -50,6 +51,8 @@ export function useVideoStatus(
                 }
             });
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Status response error:', response.status, errorText);
                 throw new Error('Failed to fetch video status');
             }
             const data = await response.json();
