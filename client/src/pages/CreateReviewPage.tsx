@@ -41,9 +41,9 @@ export default function CreateReviewPage() {
             return
         }
 
-        // Validate file size (100MB)
-        if (file.size > 100 * 1024 * 1024) {
-            setError('File size must be less than 100MB')
+        // Validate file size (4.4MB)
+        if (file.size > 4 * 1024 * 1024) {
+            setError('File size must be less than 4MB')
             return
         }
 
@@ -74,6 +74,12 @@ export default function CreateReviewPage() {
 
             xhr.onload = () => {
                 try {
+                    if (xhr.status === 413) {
+                        setError('File size exceeds the maximum limit of 4MB')
+                        setIsUploading(false)
+                        setUploadProgress(0)
+                        return
+                    }
                     // Handle empty response
                     if (!xhr.responseText) {
                         setError('Server returned an empty response. Please try again.')
@@ -265,7 +271,7 @@ export default function CreateReviewPage() {
                                         or click to select a file
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                                        Supported formats: MP4, MOV, AVI (max 100MB)
+                                        Supported formats: MP4, MOV, AVI (max 4MB)
                                     </Typography>
                                 </>
                             )}

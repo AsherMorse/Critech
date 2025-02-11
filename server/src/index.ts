@@ -44,8 +44,8 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 // Configure body size limits
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
+app.use(express.json({ limit: '4.4mb' }));
+app.use(express.urlencoded({ limit: '4.4mb', extended: true }));
 
 // Initialize server
 const startServer = async () => {
