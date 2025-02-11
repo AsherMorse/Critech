@@ -8,11 +8,29 @@ import {
     TextField,
     FormControlLabel,
     Switch,
-    Divider
+    Divider,
+    CircularProgress
 } from '@mui/material'
 import { useLocation, Navigate, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { AutoAwesome } from '@mui/icons-material'
+
+const API_URL = import.meta.env.VITE_API_URL
+
+interface AltLink {
+    name: string;
+    url: string;
+}
+
+interface FormData {
+    title: string;
+    description: string;
+    pros: string[];
+    cons: string[];
+    tags: string[];
+    altLinks: AltLink[];
+}
 
 const darkTheme = createTheme({
     palette: {
@@ -33,35 +51,21 @@ interface LocationState {
     videoId: string;
 }
 
-interface AltLink {
-    name: string;
-    url: string;
-}
-
-interface ReviewData {
-    title: string;
-    description: string;
-    videoId: string;
-    pros: string[];
-    cons: string[];
-    altLinks: AltLink[];
-    tags: string[];
-}
-
 export default function ReviewOptionsPage() {
     const location = useLocation()
     const navigate = useNavigate()
     const { token } = useAuth()
     const state = location.state as LocationState
     const [isLoading, setIsLoading] = useState(false)
-    const [formData, setFormData] = useState<ReviewData>({
+    const [isGenerating, setIsGenerating] = useState(false)
+    const [videoData, setVideoData] = useState<{ transcript?: string } | null>(null)
+    const [formData, setFormData] = useState<FormData>({
         title: '',
         description: '',
-        videoId: state?.videoId || '',
         pros: [''],
         cons: [''],
-        altLinks: [{ name: '', url: '' }],
-        tags: ['']
+        tags: [''],
+        altLinks: [{ name: '', url: '' }]
     })
 
     // Redirect to dashboard if no videoId is provided
@@ -69,8 +73,35 @@ export default function ReviewOptionsPage() {
         return <Navigate to="/dashboard" replace />
     }
 
+    // Add useEffect to fetch video data (for transcript)
+    useEffect(() => {
+        const fetchVideoData = async () => {
+            if (!token || !state?.videoId) return
+
+            try {
+                const response = await fetch(`${API_URL}/api/videos/${state.videoId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                })
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch video data')
+                }
+
+                const data = await response.json()
+                setVideoData(data)
+            } catch (error) {
+                console.error('Error fetching video data:', error)
+            }
+        }
+
+        fetchVideoData()
+    }, [token, state?.videoId])
+
     const handleInputChange =
-        (field: keyof ReviewData) =>
+        (field: keyof FormData) =>
             (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
                 setFormData(prev => ({
                     ...prev,
@@ -130,6 +161,246 @@ export default function ReviewOptionsPage() {
         }))
     }
 
+    const handleGenerateProsCons = async () => {
+        if (!videoData?.transcript || !token) {
+            console.log('Generation skipped:', {
+                hasTranscript: !!videoData?.transcript,
+                hasToken: !!token
+            })
+            return
+        }
+
+        console.log('Starting pros/cons generation...', {
+            transcriptLength: videoData.transcript.length,
+            transcriptPreview: videoData.transcript.substring(0, 100) + '...'
+        })
+
+        setIsGenerating(true)
+        try {
+            console.log('Making API request to generate pros/cons...')
+            const requestBody = {
+                transcript: videoData.transcript
+            }
+            console.log('Request payload:', requestBody)
+
+            const response = await fetch(`${API_URL}/api/openai/generate-pros-cons`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            })
+
+            const responseText = await response.text()
+            console.log('Raw API response:', responseText)
+
+            if (!response.ok) {
+                console.error('API request failed:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    response: responseText
+                })
+                throw new Error('Failed to generate pros and cons')
+            }
+
+            let data
+            try {
+                data = JSON.parse(responseText)
+                console.log('Parsed API response:', data)
+            } catch (parseError) {
+                console.error('Failed to parse API response:', {
+                    error: parseError,
+                    responseText
+                })
+                throw new Error('Invalid response format from server')
+            }
+
+            if (!data.data?.pros || !data.data?.cons) {
+                console.error('Invalid response structure:', data)
+                throw new Error('Invalid response structure from server')
+            }
+
+            console.log('Received generation results:', {
+                prosCount: data.data.pros.length,
+                consCount: data.data.cons.length,
+                pros: data.data.pros,
+                cons: data.data.cons,
+                rawData: data
+            })
+
+            // Update form data with generated pros and cons, ensuring at least one empty field
+            setFormData(prev => {
+                const newPros = data.data.pros.length > 0 ? data.data.pros : ['']
+                const newCons = data.data.cons.length > 0 ? data.data.cons : ['']
+
+                // Add an empty field at the end if all fields are filled
+                if (!newPros.includes('')) {
+                    newPros.push('')
+                }
+                if (!newCons.includes('')) {
+                    newCons.push('')
+                }
+
+                console.log('Updating form data with:', {
+                    prosFields: newPros.length,
+                    consFields: newCons.length,
+                    hasEmptyPro: newPros.includes(''),
+                    hasEmptyCon: newCons.includes(''),
+                    newPros,
+                    newCons
+                })
+
+                return {
+                    ...prev,
+                    pros: newPros,
+                    cons: newCons
+                }
+            })
+
+            console.log('Generation completed successfully')
+        } catch (error) {
+            console.error('Error in pros/cons generation:', {
+                error,
+                message: error instanceof Error ? error.message : 'Unknown error',
+                transcript: videoData.transcript.substring(0, 100) + '...'
+            })
+            alert('Failed to generate pros and cons. Please try again or add them manually.')
+        } finally {
+            setIsGenerating(false)
+            console.log('Generation process finished')
+        }
+    }
+
+    const handleGenerateTags = async () => {
+        if (!videoData?.transcript || !token) {
+            console.log('Tag generation skipped:', {
+                hasTranscript: !!videoData?.transcript,
+                hasToken: !!token
+            })
+            return
+        }
+
+        console.log('Starting tag generation...')
+        setIsGenerating(true)
+        try {
+            const requestBody = {
+                transcript: videoData.transcript,
+                title: formData.title,
+                description: formData.description
+            }
+            console.log('Request payload:', requestBody)
+
+            const response = await fetch(`${API_URL}/api/openai/generate-tags`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            })
+
+            const responseText = await response.text()
+            console.log('Raw API response:', responseText)
+
+            if (!response.ok) {
+                throw new Error('Failed to generate tags')
+            }
+
+            const data = JSON.parse(responseText)
+            console.log('Parsed API response:', data)
+
+            if (!data.data?.tags) {
+                throw new Error('Invalid response structure from server')
+            }
+
+            // Update form data with generated tags, ensuring at least one empty field
+            setFormData(prev => {
+                const newTags = data.data.tags.length > 0 ? data.data.tags : ['']
+                if (!newTags.includes('')) {
+                    newTags.push('')
+                }
+                return {
+                    ...prev,
+                    tags: newTags
+                }
+            })
+        } catch (error) {
+            console.error('Error in tag generation:', error)
+            alert('Failed to generate tags. Please try again or add them manually.')
+        } finally {
+            setIsGenerating(false)
+        }
+    }
+
+    const handleGenerateAltLinks = async () => {
+        if (!videoData?.transcript || !token) {
+            console.log('Alt links generation skipped:', {
+                hasTranscript: !!videoData?.transcript,
+                hasToken: !!token
+            })
+            return
+        }
+
+        console.log('Starting alt links generation...')
+        setIsGenerating(true)
+        try {
+            const requestBody = {
+                transcript: videoData.transcript,
+                title: formData.title,
+                description: formData.description
+            }
+            console.log('Request payload:', requestBody)
+
+            const response = await fetch(`${API_URL}/api/openai/generate-alt-links`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            })
+
+            const responseText = await response.text()
+            console.log('Raw API response:', responseText)
+
+            if (!response.ok) {
+                throw new Error('Failed to generate alternative links')
+            }
+
+            const data = JSON.parse(responseText)
+            console.log('Parsed API response:', data)
+
+            if (!data.data?.altLinks) {
+                throw new Error('Invalid response structure from server')
+            }
+
+            // Update form data with generated alt links, ensuring at least one empty field
+            setFormData(prev => {
+                // Keep the full URLs from the response and ensure they have http/https
+                const newAltLinks = data.data.altLinks.map((link: { name: string; url: string }) => ({
+                    name: link.name,
+                    url: link.url.startsWith('http') ? link.url : `https://${link.url}` // Add https if missing
+                }))
+
+                // Add an empty field if all fields are filled
+                if (newAltLinks.length === 0 || !newAltLinks.some(link => link.name === '' && link.url === '')) {
+                    newAltLinks.push({ name: '', url: '' })
+                }
+
+                return {
+                    ...prev,
+                    altLinks: newAltLinks
+                }
+            })
+        } catch (error) {
+            console.error('Error in alt links generation:', error)
+            alert('Failed to generate alternative links. Please try again or add them manually.')
+        } finally {
+            setIsGenerating(false)
+        }
+    }
+
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault()
         setIsLoading(true)
@@ -153,7 +424,7 @@ export default function ReviewOptionsPage() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    videoId: Number(cleanedData.videoId),
+                    videoId: Number(state.videoId),
                     title: cleanedData.title,
                     description: cleanedData.description,
                     pros: cleanedData.pros,
@@ -233,9 +504,24 @@ export default function ReviewOptionsPage() {
 
                         <Divider sx={{ my: 2 }} />
 
-                        <Typography variant="h6" gutterBottom>
-                            Pros
-                        </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="h6">
+                                Pros
+                            </Typography>
+                            {/* Generate Button - show only if there's a transcript */}
+                            {videoData?.transcript && (
+                                <Button
+                                    variant="outlined"
+                                    color="primary"
+                                    startIcon={isGenerating ? <CircularProgress size={20} /> : <AutoAwesome />}
+                                    onClick={handleGenerateProsCons}
+                                    disabled={isGenerating}
+                                    sx={{ mb: 1 }}
+                                >
+                                    {isGenerating ? 'Generating...' : 'Auto-Generate Pros & Cons'}
+                                </Button>
+                            )}
+                        </Box>
                         {formData.pros.map((pro, index) => (
                             <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                                 <TextField
@@ -292,7 +578,20 @@ export default function ReviewOptionsPage() {
                         <Typography variant="h6" gutterBottom>
                             Alternative Links
                         </Typography>
-                        {formData.altLinks.map((link, index) => (
+                        {/* Add Generate Alt Links button */}
+                        {videoData?.transcript && (
+                            <Button
+                                variant="outlined"
+                                color="primary"
+                                startIcon={isGenerating ? <CircularProgress size={20} /> : <AutoAwesome />}
+                                onClick={handleGenerateAltLinks}
+                                disabled={isGenerating}
+                                sx={{ mb: 2 }}
+                            >
+                                {isGenerating ? 'Generating...' : 'Auto-Generate Links'}
+                            </Button>
+                        )}
+                        {formData.altLinks.map((link: AltLink, index) => (
                             <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                                 <TextField
                                     label="Link Name"
@@ -301,13 +600,37 @@ export default function ReviewOptionsPage() {
                                     value={link.name}
                                     onChange={handleAltLinkChange(index, 'name')}
                                 />
-                                <TextField
-                                    label="URL"
-                                    variant="outlined"
-                                    sx={{ flex: 2 }}
-                                    value={link.url}
-                                    onChange={handleAltLinkChange(index, 'url')}
-                                />
+                                <Box sx={{ flex: 2, display: 'flex', gap: 1 }}>
+                                    <TextField
+                                        label="URL"
+                                        variant="outlined"
+                                        fullWidth
+                                        value={link.url}
+                                        onChange={(e) => {
+                                            const newUrl = e.target.value;
+                                            handleAltLinkChange(index, 'url')({
+                                                ...e,
+                                                target: {
+                                                    ...e.target,
+                                                    value: newUrl.startsWith('http') ? newUrl : `https://${newUrl}`
+                                                }
+                                            });
+                                        }}
+                                        placeholder="https://example.com"
+                                    />
+                                    {link.url && (
+                                        <Button
+                                            variant="outlined"
+                                            component="a"
+                                            href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            sx={{ minWidth: 'auto' }}
+                                        >
+                                            Open
+                                        </Button>
+                                    )}
+                                </Box>
                                 <Button
                                     variant="outlined"
                                     color="error"
@@ -327,6 +650,19 @@ export default function ReviewOptionsPage() {
                         <Typography variant="h6" gutterBottom>
                             Tags
                         </Typography>
+                        {/* Add Generate Tags button */}
+                        {videoData?.transcript && (
+                            <Button
+                                variant="outlined"
+                                color="primary"
+                                startIcon={isGenerating ? <CircularProgress size={20} /> : <AutoAwesome />}
+                                onClick={handleGenerateTags}
+                                disabled={isGenerating}
+                                sx={{ mb: 2 }}
+                            >
+                                {isGenerating ? 'Generating...' : 'Auto-Generate Tags'}
+                            </Button>
+                        )}
                         {formData.tags.map((tag, index) => (
                             <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                                 <TextField
