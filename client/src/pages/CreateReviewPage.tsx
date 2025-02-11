@@ -114,7 +114,7 @@ export default function CreateReviewPage() {
                         setTimeout(() => {
                             const videoData = {
                                 videoUrl: response.video.videoUrl,
-                                videoId: response.video.id
+                                videoId: Number(response.video.id)
                             }
 
                             navigate('/video-preview', {

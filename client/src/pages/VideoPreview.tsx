@@ -22,7 +22,7 @@ const darkTheme = createTheme({
 
 interface LocationState {
     videoUrl: string;
-    videoId: string;
+    videoId: number;
 }
 
 export default function VideoPreview() {
@@ -82,7 +82,7 @@ export default function VideoPreview() {
                     <Box sx={{ p: 3 }}>
                         {/* Transcription Status */}
                         <TranscriptionStatus
-                            videoId={state.videoId}
+                            videoId={state.videoId.toString()}
                             onTranscriptionComplete={() => setIsTranscriptionComplete(true)}
                         />
 
@@ -90,7 +90,7 @@ export default function VideoPreview() {
                         {isTranscriptionComplete && (
                             <>
                                 <Divider sx={{ my: 3 }} />
-                                <SummaryViewer videoId={state.videoId} />
+                                <SummaryViewer videoId={state.videoId.toString()} />
                             </>
                         )}
 
