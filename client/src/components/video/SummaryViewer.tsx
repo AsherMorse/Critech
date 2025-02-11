@@ -14,6 +14,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 interface SummaryViewerProps {
     videoId: string;
 }
@@ -36,11 +38,13 @@ export default function SummaryViewer({ videoId }: SummaryViewerProps) {
             try {
                 console.log('SummaryViewer: Starting fetch for videoId:', videoId);
                 setLoading(true);
-                const response = await fetch(`/api/videos/${videoId}/transcript`, {
+                const response = await fetch(`${API_URL}/api/videos/${videoId}/transcript`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    method: 'GET'
                 });
                 console.log('SummaryViewer: Response status:', response.status);
 
@@ -155,4 +159,4 @@ export default function SummaryViewer({ videoId }: SummaryViewerProps) {
             </Collapse>
         </Paper>
     );
-} 
+}

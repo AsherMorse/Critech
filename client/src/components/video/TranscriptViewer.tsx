@@ -17,6 +17,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 interface TranscriptViewerProps {
     videoId: string;
     maxHeight?: string | number;
@@ -41,11 +43,13 @@ export default function TranscriptViewer({ videoId, maxHeight = '500px' }: Trans
             try {
                 console.log('TranscriptViewer: Starting fetch for videoId:', videoId);
                 setLoading(true);
-                const response = await fetch(`/api/videos/${videoId}/transcript`, {
+                const response = await fetch(`${API_URL}/api/videos/${videoId}/transcript`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    method: 'GET'
                 });
                 console.log('TranscriptViewer: Response status:', response.status);
 

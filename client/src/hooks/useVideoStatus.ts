@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 export interface VideoStatus {
     status: {
         video: string;
@@ -44,7 +46,7 @@ export function useVideoStatus(
     const fetchStatus = async () => {
         try {
             console.log('Fetching status with token:', token?.substring(0, 10) + '...');
-            const response = await fetch(`/api/videos/${videoId}/status`, {
+            const response = await fetch(`${API_URL}/api/videos/${videoId}/status`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Accept': 'application/json'

@@ -9,12 +9,28 @@
   "routes": [
     {
       "src": "/api/videos/upload",
-      "methods": ["POST"],
-      "dest": "src/index.ts"
+      "methods": [
+        "POST",
+        "OPTIONS"
+      ],
+      "dest": "src/index.ts",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://critech.ashermorse.org",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true"
+      }
     },
     {
       "src": "/api/(.*)",
-      "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      "methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH",
+        "OPTIONS"
+      ],
       "dest": "src/index.ts"
     },
     {
@@ -22,4 +38,4 @@
       "dest": "src/index.ts"
     }
   ]
-} 
+}

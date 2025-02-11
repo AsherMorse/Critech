@@ -91,17 +91,27 @@ class VideosController extends BaseController {
       throw new ApiError(400, 'No video file provided')
     }
 
+    // Check if file size is over 4MB (Cloudinary free tier limit)
+    if (req.file.size > 4 * 1024 * 1024) {
+      throw new ApiError(413, 'File size exceeds Cloudinary free tier limit of 4MB')
+    }
+
     try {
       console.log('Starting video upload process...')
+      console.log('File details:', {
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        originalname: req.file.originalname
+      })
       const stream = Readable.from(req.file.buffer)
 
-      console.log('Uploading to Cloudinary...')
+      console.log('Uploading to Cloudinary with direct config...')
       const uploadResponse = await new Promise<CloudinaryUploadResponse>((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
             resource_type: 'video',
             folder: 'reviews',
-            upload_preset: UPLOAD_PRESETS.REVIEW_VIDEO,
+            allowed_formats: ['mp4', 'mov', 'avi'],
             eager: [
               {
                 width: 320,
@@ -110,18 +120,37 @@ class VideosController extends BaseController {
                 format: 'jpg'
               }
             ],
-            eager_async: false
+            eager_async: false,
+            transformation: [
+              { quality: 'auto' },
+              { fetch_format: 'auto' }
+            ]
           },
           (error, result) => {
             if (error) {
-              console.error('Cloudinary upload error:', error)
-              reject(error)
+              console.error('Cloudinary upload error details:', {
+                error: error,
+                message: error.message,
+                http_code: error.http_code,
+                name: error.name
+              })
+              // Convert Cloudinary errors to appropriate API errors
+              if (error.http_code === 400 && error.message.includes('Unsupported video format')) {
+                reject(new ApiError(413, 'File size exceeds Cloudinary free tier limit of 4MB'))
+              } else {
+                reject(error)
+              }
             } else {
               console.log('Cloudinary upload successful. Full response:', JSON.stringify(result, null, 2))
               resolve(result as unknown as CloudinaryUploadResponse)
             }
           }
         )
+
+        stream.on('error', (error) => {
+          console.error('Stream error:', error)
+          reject(error)
+        })
 
         stream.pipe(uploadStream)
       })
@@ -206,6 +235,9 @@ class VideosController extends BaseController {
     } catch (error) {
       console.error('Video upload process failed:', error)
       if (error instanceof Error) {
+        if (error instanceof ApiError) {
+          throw error // Re-throw API errors with their original status
+        }
         throw new ApiError(500, `Failed to upload video: ${error.message}`, error)
       } else {
         throw new ApiError(500, 'Failed to upload video: Unknown error', error)
