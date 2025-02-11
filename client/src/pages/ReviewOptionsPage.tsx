@@ -384,7 +384,7 @@ export default function ReviewOptionsPage() {
                 }))
 
                 // Add an empty field if all fields are filled
-                if (newAltLinks.length === 0 || !newAltLinks.some(link => link.name === '' && link.url === '')) {
+                if (newAltLinks.length === 0 || !newAltLinks.some((link: AltLink) => link.name === '' && link.url === '')) {
                     newAltLinks.push({ name: '', url: '' })
                 }
 
@@ -607,14 +607,21 @@ export default function ReviewOptionsPage() {
                                         fullWidth
                                         value={link.url}
                                         onChange={(e) => {
-                                            const newUrl = e.target.value;
-                                            handleAltLinkChange(index, 'url')({
-                                                ...e,
-                                                target: {
-                                                    ...e.target,
-                                                    value: newUrl.startsWith('http') ? newUrl : `https://${newUrl}`
-                                                }
-                                            });
+                                            const input = e.target as HTMLInputElement;
+                                            const newUrl = input.value;
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                altLinks: prev.altLinks.map((l, i) =>
+                                                    i === index
+                                                        ? {
+                                                            ...l,
+                                                            url: newUrl.startsWith('http')
+                                                                ? newUrl
+                                                                : `https://${newUrl}`
+                                                        }
+                                                        : l
+                                                )
+                                            }));
                                         }}
                                         placeholder="https://example.com"
                                     />
