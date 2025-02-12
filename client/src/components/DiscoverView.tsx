@@ -1,7 +1,8 @@
-import { Box, Typography, Skeleton, Chip } from '@mui/material'
+import { Box, Typography, Skeleton, Chip, IconButton } from '@mui/material'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 const PAGE_SIZE = 1
@@ -166,9 +167,15 @@ export default function DiscoverView() {
         setActiveVideoId(videoId)
         const video = videoRefs.current[videoId]
         if (video) {
-          video.play().catch(error => {
-            console.error('Error playing video:', error)
-          })
+          const playPromise = video.play()
+          if (playPromise) {
+            playPromise.catch(error => {
+              if (error.name === 'NotAllowedError') {
+                video.muted = true
+                video.play()
+              }
+            })
+          }
         }
       } else {
         const video = videoRefs.current[videoId]
@@ -203,7 +210,22 @@ export default function DiscoverView() {
     const video = videoRefs.current[videoId]
     if (video && activeVideoId === videoId) {
       video.play().catch(error => {
-        console.error('Error playing video:', error)
+        if (error.name === 'NotAllowedError') {
+          video.muted = true
+          video.play()
+        }
+      })
+    }
+  }, [activeVideoId])
+
+  // Stop all other videos when active video changes
+  useEffect(() => {
+    if (activeVideoId !== null) {
+      Object.entries(videoRefs.current).forEach(([id, video]) => {
+        if (parseInt(id) !== activeVideoId && video) {
+          video.pause()
+          video.currentTime = 0
+        }
       })
     }
   }, [activeVideoId])
@@ -214,6 +236,7 @@ export default function DiscoverView() {
   }, [])
 
   const handleReviewClick = (reviewId: number) => {
+    console.log('Review clicked:', reviewId)
     navigate(`/reviews/${reviewId}`)
   }
 
@@ -228,6 +251,12 @@ export default function DiscoverView() {
         left: 0,
         bgcolor: 'background.default',
         scrollSnapType: 'y mandatory'
+      }}
+      onTouchStart={() => {
+        const activeVideo = activeVideoId ? videoRefs.current[activeVideoId] : null
+        if (activeVideo) {
+          activeVideo.play()
+        }
       }}
     >
       {error && (
@@ -261,9 +290,26 @@ export default function DiscoverView() {
               bgcolor: 'black',
               scrollSnapAlign: 'start',
               scrollSnapStop: 'always',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              cursor: 'pointer'
             }}
-            onClick={() => handleReviewClick(review.id)}
+            onClick={() => {
+              const video = videoRefs.current[review.id]
+              if (video) {
+                if (video.paused) {
+                  // Pause all other videos first
+                  Object.entries(videoRefs.current).forEach(([id, v]) => {
+                    if (parseInt(id) !== review.id && v) {
+                      v.pause()
+                      v.currentTime = 0
+                    }
+                  })
+                  video.play()
+                } else {
+                  video.pause()
+                }
+              }
+            }}
           >
             {review.video?.videoUrl ? (
               <>
@@ -274,7 +320,6 @@ export default function DiscoverView() {
                   data-video-id={review.id}
                   src={review.video.videoUrl}
                   playsInline
-                  muted
                   loop
                   style={{
                     position: 'absolute',
@@ -304,6 +349,28 @@ export default function DiscoverView() {
                     {review.title}
                   </Typography>
                 </Box>
+                {/* Open Review Button */}
+                <IconButton
+                  onClick={(e) => {
+                    e.stopPropagation() // Prevent event bubbling
+                    console.log('IconButton clicked for review:', review.id)
+                    handleReviewClick(review.id)
+                  }}
+                  sx={{
+                    position: 'absolute',
+                    right: 16,
+                    bottom: review.tags && review.tags.length > 0 ? 80 : 16,
+                    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                    color: 'white',
+                    padding: '12px', // Make button bigger
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    },
+                    zIndex: 2
+                  }}
+                >
+                  <OpenInNewIcon sx={{ fontSize: 28 }} /> {/* Make icon bigger */}
+                </IconButton>
                 {/* Tags overlay at the bottom */}
                 {review.tags && review.tags.length > 0 && (
                   <Box
