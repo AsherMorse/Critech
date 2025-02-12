@@ -162,11 +162,33 @@ export default function DiscoverView() {
   // Handle video visibility change
   const handleVideoIntersection = useCallback((entries: IntersectionObserverEntry[]) => {
     entries.forEach(entry => {
-      const videoId = parseInt(entry.target.getAttribute('data-video-id') || '0')
+      const container = entry.target
+      const video = container.querySelector('video')
+      const videoId = video?.getAttribute('data-video-id')
+
+      if (!videoId) {
+        console.error('No video ID found for intersecting element')
+        return
+      }
+
+      const id = parseInt(videoId)
+      console.log('Intersection change:', { id, isIntersecting: entry.isIntersecting })
+
       if (entry.isIntersecting) {
-        setActiveVideoId(videoId)
-        const video = videoRefs.current[videoId]
+        console.log('Setting active video:', id)
+        setActiveVideoId(id)
+        const video = videoRefs.current[id]
         if (video) {
+          // Pause all other videos first
+          Object.entries(videoRefs.current).forEach(([otherId, v]) => {
+            if (parseInt(otherId) !== id && v) {
+              console.log('Pausing video:', otherId)
+              v.pause()
+              v.currentTime = 0
+            }
+          })
+          // Then play the current video
+          console.log('Playing video:', id)
           const playPromise = video.play()
           if (playPromise) {
             playPromise.catch(error => {
@@ -178,8 +200,9 @@ export default function DiscoverView() {
           }
         }
       } else {
-        const video = videoRefs.current[videoId]
+        const video = videoRefs.current[id]
         if (video) {
+          console.log('Pausing video from view:', id)
           video.pause()
           video.currentTime = 0
         }
@@ -189,18 +212,22 @@ export default function DiscoverView() {
 
   // Set up intersection observer
   useEffect(() => {
+    console.log('Setting up observer for videos:', Object.keys(videoRefs.current))
     const observer = new IntersectionObserver(handleVideoIntersection, {
       threshold: 0.5 // Trigger when video is 50% visible
     })
 
-    // Observe all video containers
-    Object.values(videoRefs.current).forEach(video => {
-      if (video) {
-        observer.observe(video.parentElement!)
+    // Observe the video containers
+    reviews.forEach(review => {
+      const videoContainer = videoRefs.current[review.id]?.parentElement
+      if (videoContainer) {
+        console.log('Observing container for video:', review.id)
+        observer.observe(videoContainer)
       }
     })
 
     return () => {
+      console.log('Cleaning up observer')
       observer.disconnect()
     }
   }, [handleVideoIntersection, reviews])
@@ -221,6 +248,7 @@ export default function DiscoverView() {
   // Stop all other videos when active video changes
   useEffect(() => {
     if (activeVideoId !== null) {
+      console.log('Active video changed to:', activeVideoId)
       Object.entries(videoRefs.current).forEach(([id, video]) => {
         if (parseInt(id) !== activeVideoId && video) {
           video.pause()
