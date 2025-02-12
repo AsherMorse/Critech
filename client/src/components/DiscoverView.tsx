@@ -189,12 +189,14 @@ export default function DiscoverView() {
           })
           // Then play the current video
           console.log('Playing video:', id)
+          video.muted = false // Ensure unmuted before trying to play
           const playPromise = video.play()
           if (playPromise) {
             playPromise.catch(error => {
               if (error.name === 'NotAllowedError') {
+                console.log('Autoplay blocked, trying muted:', id)
                 video.muted = true
-                video.play()
+                video.play().catch(e => console.error('Failed to play even muted:', e))
               }
             })
           }
@@ -343,7 +345,10 @@ export default function DiscoverView() {
               <>
                 <video
                   ref={el => {
-                    if (el) videoRefs.current[review.id] = el
+                    if (el) {
+                      el.muted = false // Ensure video starts unmuted
+                      videoRefs.current[review.id] = el
+                    }
                   }}
                   data-video-id={review.id}
                   src={review.video.videoUrl}
