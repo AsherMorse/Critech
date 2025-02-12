@@ -1,14 +1,10 @@
-import { Box, Typography, Grid, Card, CardMedia, Skeleton, Chip, TextField, InputAdornment, ToggleButtonGroup, ToggleButton } from '@mui/material'
+import { Box, Typography, Skeleton, Chip } from '@mui/material'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import SearchIcon from '@mui/icons-material/Search'
-import LocalOfferIcon from '@mui/icons-material/LocalOffer'
-import TitleIcon from '@mui/icons-material/Title'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 const PAGE_SIZE = 1
-const SEARCH_ENABLED = false // Hardcoded flag to disable search
 
 interface Review {
   id: number
@@ -43,38 +39,10 @@ export default function DiscoverView() {
   const [lastId, setLastId] = useState<number | undefined>(undefined)
   const [hasMore, setHasMore] = useState(true)
   const [isFetching, setIsFetching] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchMode, setSearchMode] = useState<'tags' | 'content'>('content')
   const [activeVideoId, setActiveVideoId] = useState<number | null>(null)
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement }>({})
   const { token } = useAuth()
   const navigate = useNavigate()
-
-  // Filter reviews based on search query and mode
-  const filteredReviews = SEARCH_ENABLED ? reviews.filter(review => {
-    if (!searchQuery.trim()) return true
-    const searchTerms = searchQuery.toLowerCase().split(' ')
-
-    if (searchMode === 'tags') {
-      return searchTerms.every(term =>
-        review.tags?.some(tag => tag.toLowerCase().includes(term))
-      )
-    } else {
-      // Search in title and description
-      return searchTerms.every(term => {
-        const titleMatch = review.title?.toLowerCase().includes(term)
-        const descMatch = review.description?.toLowerCase().includes(term)
-        return titleMatch || descMatch
-      })
-    }
-  }) : reviews
-
-  const handleSearchModeChange = (_event: React.MouseEvent<HTMLElement>, newMode: 'tags' | 'content' | null) => {
-    if (newMode !== null) {
-      setSearchMode(newMode)
-      setSearchQuery('') // Clear search when changing modes
-    }
-  }
 
   // Fetch total count
   const fetchTotalCount = useCallback(async () => {
@@ -131,9 +99,7 @@ export default function DiscoverView() {
         setHasMore(false)
         if (newReviews.length > 0) {
           setReviews(prev => {
-            // Create a Set of existing IDs
             const existingIds = new Set(prev.map((r: Review) => r.id))
-            // Only add reviews that don't already exist
             const uniqueNewReviews = newReviews.filter((r: Review) => !existingIds.has(r.id))
             return [...prev, ...uniqueNewReviews]
           })
@@ -141,9 +107,7 @@ export default function DiscoverView() {
         }
       } else {
         setReviews(prev => {
-          // Create a Set of existing IDs
           const existingIds = new Set(prev.map((r: Review) => r.id))
-          // Only add reviews that don't already exist
           const uniqueNewReviews = newReviews.filter((r: Review) => !existingIds.has(r.id))
           return [...prev, ...uniqueNewReviews]
         })
@@ -247,38 +211,10 @@ export default function DiscoverView() {
   // Handle video error
   const handleVideoError = useCallback((videoId: number) => {
     console.error(`Error loading video ${videoId}`)
-    // Could add error state handling here if needed
   }, [])
 
   const handleReviewClick = (reviewId: number) => {
     navigate(`/reviews/${reviewId}`)
-  }
-
-  // Show loading skeletons for the next batch
-  const renderSkeletons = () => {
-    if (!loading && !hasMore) return null
-
-    return Array.from({ length: PAGE_SIZE }).map((_, index) => (
-      <Grid item xs={12} sm={6} md={4} key={`skeleton-${index}`}>
-        <Card sx={{
-          height: 0,
-          paddingTop: '177.77%', // 9:16 aspect ratio (16/9 * 100)
-          position: 'relative',
-          bgcolor: 'rgba(0,0,0,0.1)'
-        }}>
-          <Skeleton
-            variant="rectangular"
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%'
-            }}
-          />
-        </Card>
-      </Grid>
-    ))
   }
 
   return (
@@ -291,7 +227,7 @@ export default function DiscoverView() {
         top: 0,
         left: 0,
         bgcolor: 'background.default',
-        scrollSnapType: 'y mandatory' // Enable smooth snapping
+        scrollSnapType: 'y mandatory'
       }}
     >
       {error && (
@@ -305,7 +241,7 @@ export default function DiscoverView() {
         </Box>
       )}
 
-      {!loading && !error && filteredReviews.length === 0 && (
+      {!loading && !error && reviews.length === 0 && (
         <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}>
           <Typography>
             No reviews available yet
@@ -315,7 +251,7 @@ export default function DiscoverView() {
 
       {/* Video Container */}
       <Box sx={{ width: '100%', height: '100%' }}>
-        {filteredReviews.map((review) => (
+        {reviews.map((review) => (
           <Box
             key={review.id}
             sx={{
