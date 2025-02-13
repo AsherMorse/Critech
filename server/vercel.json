@@ -1,14 +1,19 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "src/index.ts",
-      "use": "@vercel/node",
-      "config": {
-        "maxDuration": 60
-      }
+  "functions": {
+    "src/controllers/reviews.controller.ts": {
+      "maxDuration": 60
+    },
+    "src/controllers/topics.controller.ts": {
+      "maxDuration": 60
+    },
+    "src/controllers/openai.ts": {
+      "maxDuration": 30
+    },
+    "src/api/**/*.ts": {
+      "maxDuration": 15
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/(.*)",

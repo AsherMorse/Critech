@@ -3,6 +3,9 @@ import ReviewsService, { CreateReviewFromVideoDto, UpdateReviewDto } from '../se
 import { BaseController } from './base.controller'
 import { ApiError } from '../middleware/error-handler'
 
+// Set maximum duration for specific endpoints
+export const maxDuration = 60
+
 class ReviewsController extends BaseController {
   constructor() {
     super()
