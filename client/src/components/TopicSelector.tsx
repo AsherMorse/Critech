@@ -15,7 +15,8 @@ import {
   IconButton,
   Box,
   Snackbar,
-  Alert
+  Alert,
+  SelectChangeEvent
 } from '@mui/material'
 
 interface Topic {
@@ -49,18 +50,22 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
 
   const fetchTopics = async () => {
     try {
+      console.log('Fetching topics with token:', token ? 'present' : 'missing')
       const response = await fetch('/api/topics', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
         }
       })
+      console.log('Topics fetch response status:', response.status)
       if (!response.ok) {
         throw new Error('Failed to fetch topics')
       }
       const data = await response.json()
+      console.log('Fetched topics:', data)
       setTopics(data)
     } catch (err) {
+      console.error('Error fetching topics:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch topics')
     } finally {
       setLoading(false)
@@ -75,6 +80,7 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
 
   const handleAddTopic = async () => {
     try {
+      console.log('Adding new topic:', newTopic)
       const response = await fetch('/api/topics', {
         method: 'POST',
         headers: {
@@ -84,11 +90,13 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
         body: JSON.stringify(newTopic),
       })
 
+      console.log('Add topic response status:', response.status)
       if (!response.ok) {
         throw new Error('Failed to create topic')
       }
 
       const createdTopic = await response.json()
+      console.log('Created topic:', createdTopic)
       setTopics([...topics, createdTopic])
       onChange(createdTopic.id)
       setNewTopic({ name: '', description: '' })
@@ -99,6 +107,7 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
         severity: 'success'
       })
     } catch (err) {
+      console.error('Error creating topic:', err)
       setSnackbar({
         open: true,
         message: err instanceof Error ? err.message : 'Failed to create topic',
@@ -110,6 +119,26 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false })
   }
+
+  const handleChange = (event: SelectChangeEvent<number | ''>) => {
+    console.log('Select change event:', {
+      value: event.target.value,
+      type: typeof event.target.value
+    })
+
+    const newValue = event.target.value;
+    // Convert empty string to undefined, otherwise use the number value
+    const topicId = newValue === '' ? undefined : Number(newValue)
+    console.log('Converted topicId:', topicId)
+    onChange(topicId)
+  }
+
+  console.log('TopicSelector render:', {
+    currentValue: value,
+    topicsCount: topics.length,
+    loading,
+    error
+  })
 
   if (loading) {
     return <div>Loading topics...</div>
@@ -125,7 +154,7 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
         <InputLabel>Topic</InputLabel>
         <Select
           value={value || ''}
-          onChange={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}
+          onChange={handleChange}
           label="Topic"
         >
           <MenuItem value="">
