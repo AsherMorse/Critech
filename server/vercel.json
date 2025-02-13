@@ -8,20 +8,6 @@
   ],
   "routes": [
     {
-      "src": "/api/videos/upload",
-      "methods": [
-        "POST",
-        "OPTIONS"
-      ],
-      "dest": "src/index.ts",
-      "headers": {
-        "Access-Control-Allow-Origin": "https://critech.ashermorse.org",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Allow-Credentials": "true"
-      }
-    },
-    {
       "src": "/api/(.*)",
       "methods": [
         "GET",
@@ -31,11 +17,23 @@
         "PATCH",
         "OPTIONS"
       ],
-      "dest": "src/index.ts"
+      "dest": "src/index.ts",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://critech.ashermorse.org",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+        "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
+        "Access-Control-Allow-Credentials": "true"
+      }
     },
     {
       "src": "/(.*)",
       "dest": "src/index.ts"
     }
-  ]
+  ],
+  "functions": {
+    "src/index.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
 }
