@@ -50,7 +50,7 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
 
   const fetchTopics = async () => {
     try {
-      console.log('Fetching topics with token:', token ? 'present' : 'missing')
+      console.log('Fetching topics with token:', token ? `${token.substring(0, 10)}...` : 'missing')
       const response = await fetch('/api/topics', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -58,14 +58,36 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
         }
       })
       console.log('Topics fetch response status:', response.status)
+
+      // Log response headers
+      const headers = Object.fromEntries(response.headers.entries());
+      console.log('Response headers:', headers);
+
+      // Get the raw response text first
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+
       if (!response.ok) {
-        throw new Error('Failed to fetch topics')
+        throw new Error(`Failed to fetch topics: ${response.status} ${response.statusText}\nResponse: ${responseText}`)
       }
-      const data = await response.json()
-      console.log('Fetched topics:', data)
-      setTopics(data)
+
+      // Try to parse the response text as JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log('Parsed topics data:', data);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+
+      setTopics(Array.isArray(data) ? data : [])
     } catch (err) {
-      console.error('Error fetching topics:', err)
+      console.error('Error fetching topics:', {
+        error: err,
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      })
       setError(err instanceof Error ? err.message : 'Failed to fetch topics')
     } finally {
       setLoading(false)
