@@ -3,6 +3,9 @@ import ReviewsService, { CreateReviewFromVideoDto, UpdateReviewDto } from '../se
 import { BaseController } from './base.controller'
 import { ApiError } from '../middleware/error-handler'
 
+// Set maximum duration for specific endpoints
+export const maxDuration = 60
+
 class ReviewsController extends BaseController {
   constructor() {
     super()
@@ -78,12 +81,6 @@ class ReviewsController extends BaseController {
     const pageSize = Math.max(1, Math.min(20, parseInt(req.query.pageSize as string) || 5))
     const lastId = req.query.lastId ? parseInt(req.query.lastId as string) : undefined
     const ownerId = req.query.ownerId as string
-
-    console.log('Pagination params:', {
-      pageSize,
-      lastId,
-      ownerId
-    })
 
     const reviews = await ReviewsService.getReviewsPage(pageSize, lastId, ownerId)
     res.json(reviews)

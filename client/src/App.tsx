@@ -8,6 +8,7 @@ import VideoPreview from './pages/VideoPreview'
 import ReviewOptionsPage from './pages/ReviewOptionsPage'
 import EditReviewPage from './pages/EditReviewPage'
 import ReviewDetailsPage from './pages/ReviewDetailsPage'
+import TopicSummaryPage from './pages/TopicSummaryPage'
 import { useAuth } from './contexts/AuthContext'
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/review-options" element={user ? <ReviewOptionsPage /> : <Navigate to="/login" />} />
         <Route path="/review/:id/edit" element={user ? <EditReviewPage /> : <Navigate to="/login" />} />
         <Route path="/reviews/:reviewId" element={<ReviewDetailsPage />} />
+        <Route path="/topics/:id" element={user ? <TopicSummaryPage /> : <Navigate to="/login" />} />
         <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
