@@ -19,6 +19,10 @@ import { TopicSelector } from '../components/TopicSelector'
 
 const API_URL = import.meta.env.VITE_API_URL
 
+if (!API_URL) {
+  throw new Error('VITE_API_URL environment variable is not set')
+}
+
 interface AltLink {
   name: string;
   url: string;
@@ -167,93 +171,39 @@ export default function ReviewOptionsPage() {
 
   const handleGenerateProsCons = async () => {
     if (!videoData?.transcript || !token) {
-      console.log('Generation skipped:', {
-        hasTranscript: !!videoData?.transcript,
-        hasToken: !!token
-      })
       return
     }
 
-    console.log('Starting pros/cons generation...', {
-      transcriptLength: videoData.transcript.length,
-      transcriptPreview: videoData.transcript.substring(0, 100) + '...'
-    })
-
     setIsGenerating(true)
     try {
-      console.log('Making API request to generate pros/cons...')
-      const requestBody = {
-        transcript: videoData.transcript
-      }
-      console.log('Request payload:', requestBody)
-
       const response = await fetch(`${API_URL}/api/openai/generate-pros-cons`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          transcript: videoData.transcript
+        })
       })
 
-      const responseText = await response.text()
-      console.log('Raw API response:', responseText)
-
       if (!response.ok) {
-        console.error('API request failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          response: responseText
-        })
         throw new Error('Failed to generate pros and cons')
       }
 
-      let data
-      try {
-        data = JSON.parse(responseText)
-        console.log('Parsed API response:', data)
-      } catch (parseError) {
-        console.error('Failed to parse API response:', {
-          error: parseError,
-          responseText
-        })
-        throw new Error('Invalid response format from server')
-      }
+      const data = await response.json()
 
       if (!data.data?.pros || !data.data?.cons) {
-        console.error('Invalid response structure:', data)
         throw new Error('Invalid response structure from server')
       }
 
-      console.log('Received generation results:', {
-        prosCount: data.data.pros.length,
-        consCount: data.data.cons.length,
-        pros: data.data.pros,
-        cons: data.data.cons,
-        rawData: data
-      })
-
-      // Update form data with generated pros and cons, ensuring at least one empty field
       setFormData(prev => {
         const newPros = data.data.pros.length > 0 ? data.data.pros : ['']
         const newCons = data.data.cons.length > 0 ? data.data.cons : ['']
 
-        // Add an empty field at the end if all fields are filled
-        if (!newPros.includes('')) {
-          newPros.push('')
-        }
-        if (!newCons.includes('')) {
-          newCons.push('')
-        }
-
-        console.log('Updating form data with:', {
-          prosFields: newPros.length,
-          consFields: newCons.length,
-          hasEmptyPro: newPros.includes(''),
-          hasEmptyCon: newCons.includes(''),
-          newPros,
-          newCons
-        })
+        if (!newPros.includes('')) newPros.push('')
+        if (!newCons.includes('')) newCons.push('')
 
         return {
           ...prev,
@@ -261,69 +211,46 @@ export default function ReviewOptionsPage() {
           cons: newCons
         }
       })
-
-      console.log('Generation completed successfully')
     } catch (error) {
-      console.error('Error in pros/cons generation:', {
-        error,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        transcript: videoData.transcript.substring(0, 100) + '...'
-      })
+      console.error('Error in pros/cons generation:', error)
       alert('Failed to generate pros and cons. Please try again or add them manually.')
     } finally {
       setIsGenerating(false)
-      console.log('Generation process finished')
     }
   }
 
   const handleGenerateTags = async () => {
-    if (!videoData?.transcript || !token) {
-      console.log('Tag generation skipped:', {
-        hasTranscript: !!videoData?.transcript,
-        hasToken: !!token
-      })
-      return
-    }
+    if (!videoData?.transcript || !token) return
 
-    console.log('Starting tag generation...')
     setIsGenerating(true)
     try {
-      const requestBody = {
-        transcript: videoData.transcript,
-        title: formData.title,
-        description: formData.description
-      }
-      console.log('Request payload:', requestBody)
-
       const response = await fetch(`${API_URL}/api/openai/generate-tags`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          transcript: videoData.transcript,
+          title: formData.title,
+          description: formData.description
+        })
       })
-
-      const responseText = await response.text()
-      console.log('Raw API response:', responseText)
 
       if (!response.ok) {
         throw new Error('Failed to generate tags')
       }
 
-      const data = JSON.parse(responseText)
-      console.log('Parsed API response:', data)
+      const data = await response.json()
 
       if (!data.data?.tags) {
         throw new Error('Invalid response structure from server')
       }
 
-      // Update form data with generated tags, ensuring at least one empty field
       setFormData(prev => {
         const newTags = data.data.tags.length > 0 ? data.data.tags : ['']
-        if (!newTags.includes('')) {
-          newTags.push('')
-        }
+        if (!newTags.includes('')) newTags.push('')
         return {
           ...prev,
           tags: newTags
@@ -338,65 +265,47 @@ export default function ReviewOptionsPage() {
   }
 
   const handleGenerateAltLinks = async () => {
-    if (!videoData?.transcript || !token) {
-      console.log('Alt links generation skipped:', {
-        hasTranscript: !!videoData?.transcript,
-        hasToken: !!token
-      })
-      return
-    }
+    if (!videoData?.transcript || !token) return
 
-    console.log('Starting alt links generation...')
     setIsGenerating(true)
     try {
-      const requestBody = {
-        transcript: videoData.transcript,
-        title: formData.title,
-        description: formData.description
-      }
-      console.log('Request payload:', requestBody)
-
       const response = await fetch(`${API_URL}/api/openai/generate-alt-links`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          transcript: videoData.transcript,
+          title: formData.title,
+          description: formData.description
+        })
       })
-
-      const responseText = await response.text()
-      console.log('Raw API response:', responseText)
 
       if (!response.ok) {
         throw new Error('Failed to generate alternative links')
       }
 
-      const data = JSON.parse(responseText)
-      console.log('Parsed API response:', data)
+      const data = await response.json()
 
       if (!data.data?.altLinks) {
         throw new Error('Invalid response structure from server')
       }
 
-      // Update form data with generated alt links, ensuring at least one empty field
-      setFormData(prev => {
-        // Keep the full URLs from the response and ensure they have http/https
-        const newAltLinks = data.data.altLinks.map((link: { name: string; url: string }) => ({
-          name: link.name,
-          url: link.url.startsWith('http') ? link.url : `https://${link.url}` // Add https if missing
-        }))
+      const newAltLinks = data.data.altLinks.map((link: { name: string; url: string }) => ({
+        name: link.name,
+        url: link.url.startsWith('http') ? link.url : `https://${link.url}`
+      }))
 
-        // Add an empty field if all fields are filled
-        if (newAltLinks.length === 0 || !newAltLinks.some((link: AltLink) => link.name === '' && link.url === '')) {
-          newAltLinks.push({ name: '', url: '' })
-        }
+      if (newAltLinks.length === 0 || !newAltLinks.some((link: AltLink) => link.name === '' && link.url === '')) {
+        newAltLinks.push({ name: '', url: '' })
+      }
 
-        return {
-          ...prev,
-          altLinks: newAltLinks
-        }
-      })
+      setFormData(prev => ({
+        ...prev,
+        altLinks: newAltLinks
+      }))
     } catch (error) {
       console.error('Error in alt links generation:', error)
       alert('Failed to generate alternative links. Please try again or add them manually.')
@@ -409,7 +318,6 @@ export default function ReviewOptionsPage() {
     event.preventDefault()
     setIsLoading(true)
 
-    // Filter out empty values
     const cleanedData = {
       ...formData,
       pros: formData.pros.filter(pro => pro.trim() !== ''),
@@ -419,8 +327,7 @@ export default function ReviewOptionsPage() {
     }
 
     try {
-      const apiUrl = `${import.meta.env.VITE_API_URL}/api/reviews/from-video`
-      const response = await fetch(apiUrl, {
+      const response = await fetch(`${API_URL}/api/reviews/from-video`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -440,21 +347,40 @@ export default function ReviewOptionsPage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error('Server error:', errorData)
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+        const errorData = await response.text()
+        console.error('Server error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorData
+        })
+
+        let errorMessage: string
+        try {
+          const parsedError = JSON.parse(errorData)
+          errorMessage = parsedError.error || parsedError.message || `HTTP error! status: ${response.status}`
+        } catch {
+          // If the error isn't JSON, use the raw text or status
+          errorMessage = errorData || `HTTP error! status: ${response.status}`
+          if (response.status === 504) {
+            errorMessage = 'Request timed out. Please try again.'
+          }
+        }
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
-      console.log('Review created:', data)
       if (!data.id) {
         throw new Error('Invalid response format from server')
       }
 
       navigate(`/reviews/${data.id}`)
     } catch (error) {
-      console.error('Error creating review:', error)
-      alert(`Error creating review: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('Error creating review:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      alert(`Error creating review: ${error instanceof Error ? error.message : 'An unexpected error occurred'}`)
     } finally {
       setIsLoading(false)
     }
@@ -470,15 +396,17 @@ export default function ReviewOptionsPage() {
   return (
     <ThemeProvider theme={darkTheme}>
       <Box
-        component="form"
-        onSubmit={handleSubmit}
         sx={{
           minHeight: '100vh',
           bgcolor: 'background.default',
           p: 3
         }}
       >
-        <Paper sx={{ p: 3 }}>
+        <Paper
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{ p: 3 }}
+        >
           <Typography variant="h5" gutterBottom>
             Create Review
           </Typography>

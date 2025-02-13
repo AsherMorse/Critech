@@ -15,8 +15,11 @@ import {
   IconButton,
   Box,
   Snackbar,
-  Alert
+  Alert,
+  SelectChangeEvent
 } from '@mui/material'
+
+const API_URL = import.meta.env.VITE_API_URL
 
 interface Topic {
   id: number
@@ -49,18 +52,46 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
 
   const fetchTopics = async () => {
     try {
-      const response = await fetch('/api/topics', {
+      console.log('Fetching topics with token:', token ? `${token.substring(0, 10)}...` : 'missing')
+      console.log('Using API URL:', API_URL)
+
+      const response = await fetch(`${API_URL}/api/topics`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
         }
       })
+      console.log('Topics fetch response status:', response.status)
+
+      // Log response headers
+      const headers = Object.fromEntries(response.headers.entries());
+      console.log('Response headers:', headers);
+
+      // Get the raw response text first
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+
       if (!response.ok) {
-        throw new Error('Failed to fetch topics')
+        throw new Error(`Failed to fetch topics: ${response.status} ${response.statusText}\nResponse: ${responseText}`)
       }
-      const data = await response.json()
-      setTopics(data)
+
+      // Try to parse the response text as JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log('Parsed topics data:', data);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+
+      setTopics(Array.isArray(data) ? data : [])
     } catch (err) {
+      console.error('Error fetching topics:', {
+        error: err,
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      })
       setError(err instanceof Error ? err.message : 'Failed to fetch topics')
     } finally {
       setLoading(false)
@@ -75,7 +106,8 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
 
   const handleAddTopic = async () => {
     try {
-      const response = await fetch('/api/topics', {
+      console.log('Adding new topic:', newTopic)
+      const response = await fetch(`${API_URL}/api/topics`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -84,11 +116,13 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
         body: JSON.stringify(newTopic),
       })
 
+      console.log('Add topic response status:', response.status)
       if (!response.ok) {
         throw new Error('Failed to create topic')
       }
 
       const createdTopic = await response.json()
+      console.log('Created topic:', createdTopic)
       setTopics([...topics, createdTopic])
       onChange(createdTopic.id)
       setNewTopic({ name: '', description: '' })
@@ -99,6 +133,7 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
         severity: 'success'
       })
     } catch (err) {
+      console.error('Error creating topic:', err)
       setSnackbar({
         open: true,
         message: err instanceof Error ? err.message : 'Failed to create topic',
@@ -110,6 +145,26 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false })
   }
+
+  const handleChange = (event: SelectChangeEvent<number | ''>) => {
+    console.log('Select change event:', {
+      value: event.target.value,
+      type: typeof event.target.value
+    })
+
+    const newValue = event.target.value;
+    // Convert empty string to undefined, otherwise use the number value
+    const topicId = newValue === '' ? undefined : Number(newValue)
+    console.log('Converted topicId:', topicId)
+    onChange(topicId)
+  }
+
+  console.log('TopicSelector render:', {
+    currentValue: value,
+    topicsCount: topics.length,
+    loading,
+    error
+  })
 
   if (loading) {
     return <div>Loading topics...</div>
@@ -125,7 +180,7 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
         <InputLabel>Topic</InputLabel>
         <Select
           value={value || ''}
-          onChange={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}
+          onChange={handleChange}
           label="Topic"
         >
           <MenuItem value="">
