@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import {
   Box,
   Typography,
@@ -20,7 +21,8 @@ import {
   Alert,
   CircularProgress
 } from '@mui/material'
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material'
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Analytics as AnalyticsIcon } from '@mui/icons-material'
+import { useNavigate } from 'react-router-dom'
 
 interface Topic {
   id: number
@@ -31,12 +33,14 @@ interface Topic {
 }
 
 export function TopicsView() {
+  const { token } = useAuth()
   const [topics, setTopics] = useState<Topic[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null)
   const [formData, setFormData] = useState({ name: '', description: '' })
+  const navigate = useNavigate()
   const [snackbar, setSnackbar] = useState<{
     open: boolean
     message: string
@@ -49,7 +53,12 @@ export function TopicsView() {
 
   const fetchTopics = async () => {
     try {
-      const response = await fetch('/api/topics')
+      const response = await fetch('/api/topics', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      })
       if (!response.ok) throw new Error('Failed to fetch topics')
       const data = await response.json()
       setTopics(data)
@@ -61,8 +70,10 @@ export function TopicsView() {
   }
 
   useEffect(() => {
-    fetchTopics()
-  }, [])
+    if (token) {
+      fetchTopics()
+    }
+  }, [token])
 
   const handleOpenDialog = (topic?: Topic) => {
     if (topic) {
@@ -89,7 +100,10 @@ export function TopicsView() {
 
       const response = await fetch(url, {
         method: editingTopic ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(formData)
       })
 
@@ -116,7 +130,10 @@ export function TopicsView() {
 
     try {
       const response = await fetch(`/api/topics/${topic.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       })
 
       if (!response.ok) throw new Error('Failed to delete topic')
@@ -186,6 +203,15 @@ export function TopicsView() {
                 <TableCell>{new Date(topic.createdAt).toLocaleDateString()}</TableCell>
                 <TableCell>{new Date(topic.updatedAt).toLocaleDateString()}</TableCell>
                 <TableCell align="right">
+                  <IconButton
+                    size="small"
+                    onClick={() => navigate(`/topics/${topic.id}`)}
+                    title="View Summary"
+                    color="primary"
+                    sx={{ mr: 1 }}
+                  >
+                    <AnalyticsIcon />
+                  </IconButton>
                   <IconButton
                     size="small"
                     onClick={() => handleOpenDialog(topic)}

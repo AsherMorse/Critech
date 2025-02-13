@@ -6,7 +6,7 @@ import { verifyAuth } from '../middleware/auth'
 const router = Router()
 
 // Apply auth middleware to all routes
-// router.use(verifyAuth as RequestHandler)
+router.use(verifyAuth as RequestHandler)
 
 // POST /topics - Create a new topic
 router.post('/', topicsController.createTopic)
@@ -25,5 +25,11 @@ router.delete('/:id', topicsController.deleteTopic)
 
 // POST /topics/initialize - Initialize topics from existing tags
 router.post('/initialize', topicsController.initializeTopics)
+
+// PUT /topics/:id/market-summary - Update market summary
+router.put('/:id/market-summary', topicsController.updateMarketSummary)
+
+// POST /topics/:id/generate-summary - Generate and update market summary
+router.post('/:id/generate-summary', topicsController.generateMarketSummary)
 
 export default router 

@@ -434,7 +434,8 @@ export default function ReviewOptionsPage() {
           pros: cleanedData.pros,
           cons: cleanedData.cons,
           altLinks: cleanedData.altLinks,
-          tags: cleanedData.tags
+          tags: cleanedData.tags,
+          topicId: cleanedData.topicId
         })
       })
 

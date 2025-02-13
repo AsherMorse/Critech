@@ -6,11 +6,25 @@ export type ReviewStatus = 'video_uploaded' | 'draft' | 'in_review' | 'published
 // Transcript status type
 export type TranscriptStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
+// Market summary type
+export type MarketSummary = {
+  summary: string;
+  overallPros: string[];
+  overallCons: string[];
+  marketTrends: Array<{
+    trend: string;
+    description: string;
+  }>;
+  recommendedAudience: string[];
+  lastUpdated: string;
+}
+
 // Topics table to store product/topic information
 export const topics = pgTable('topics', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
   description: text('description'),
+  marketSummary: jsonb('market_summary').$type<MarketSummary | null>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })

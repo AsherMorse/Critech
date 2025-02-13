@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Add as AddIcon } from '@mui/icons-material'
+import { useAuth } from '../contexts/AuthContext'
 import {
   Select,
   MenuItem,
@@ -30,6 +31,7 @@ interface TopicSelectorProps {
 }
 
 export function TopicSelector({ value, onChange }: TopicSelectorProps) {
+  const { token } = useAuth()
   const [topics, setTopics] = useState<Topic[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -47,7 +49,12 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
 
   const fetchTopics = async () => {
     try {
-      const response = await fetch('/api/topics')
+      const response = await fetch('/api/topics', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      })
       if (!response.ok) {
         throw new Error('Failed to fetch topics')
       }
@@ -61,8 +68,10 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
   }
 
   useEffect(() => {
-    fetchTopics()
-  }, [])
+    if (token) {
+      fetchTopics()
+    }
+  }, [token])
 
   const handleAddTopic = async () => {
     try {
@@ -70,6 +79,7 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(newTopic),
       })

@@ -1,6 +1,7 @@
 import { db } from '../db/client'
 import { topics, reviews } from '../db/schema'
 import { eq, sql } from 'drizzle-orm'
+import type { MarketSummary } from '../db/schema'
 
 // DTO for creating a topic
 export interface CreateTopicDto {
@@ -93,6 +94,41 @@ class TopicsService {
     }
 
     return createdTopics
+  }
+
+  async updateMarketSummary(id: number, marketSummary: MarketSummary) {
+    const result = await db.update(topics)
+      .set({
+        marketSummary: {
+          ...marketSummary,
+          lastUpdated: new Date().toISOString()
+        },
+        updatedAt: new Date()
+      })
+      .where(eq(topics.id, id))
+      .returning()
+
+    return result[0] || null
+  }
+
+  async getTopicWithReviews(id: number) {
+    const topic = await this.getTopicById(id)
+    if (!topic) return null
+
+    const topicReviews = await db.select({
+      id: reviews.id,
+      title: reviews.title,
+      description: reviews.description,
+      pros: reviews.pros,
+      cons: reviews.cons
+    })
+      .from(reviews)
+      .where(eq(reviews.topicId, id))
+
+    return {
+      ...topic,
+      reviews: topicReviews
+    }
   }
 }
 
