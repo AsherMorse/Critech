@@ -19,6 +19,8 @@ import {
   SelectChangeEvent
 } from '@mui/material'
 
+const API_URL = import.meta.env.VITE_API_URL
+
 interface Topic {
   id: number
   name: string
@@ -51,7 +53,9 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
   const fetchTopics = async () => {
     try {
       console.log('Fetching topics with token:', token ? `${token.substring(0, 10)}...` : 'missing')
-      const response = await fetch('/api/topics', {
+      console.log('Using API URL:', API_URL)
+
+      const response = await fetch(`${API_URL}/api/topics`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -103,7 +107,7 @@ export function TopicSelector({ value, onChange }: TopicSelectorProps) {
   const handleAddTopic = async () => {
     try {
       console.log('Adding new topic:', newTopic)
-      const response = await fetch('/api/topics', {
+      const response = await fetch(`${API_URL}/api/topics`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
