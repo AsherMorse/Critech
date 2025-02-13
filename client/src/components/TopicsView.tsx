@@ -172,8 +172,15 @@ export function TopicsView() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+    <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+      <Box sx={{
+        display: 'flex',
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between',
+        alignItems: { xs: 'stretch', sm: 'center' },
+        gap: 2,
+        mb: 3
+      }}>
         <Typography variant="h5" component="h1">
           Topics
         </Typography>
@@ -181,54 +188,104 @@ export function TopicsView() {
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => handleOpenDialog()}
+          fullWidth={false}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
         >
           Add Topic
         </Button>
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
+      <TableContainer
+        component={Paper}
+        sx={{
+          maxWidth: '100%',
+          overflowX: 'auto',
+          '& .MuiTableCell-root': {
+            px: { xs: 1, sm: 2 },
+            py: { xs: 1.5, sm: 2 },
+            whiteSpace: { xs: 'normal', sm: 'nowrap' },
+            minWidth: {
+              xs: '80px',
+              sm: 'auto'
+            }
+          }
+        }}
+      >
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Name</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Created</TableCell>
-              <TableCell>Updated</TableCell>
+              <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Description</TableCell>
+              <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Created</TableCell>
+              <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Updated</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {topics.map((topic) => (
               <TableRow key={topic.id}>
-                <TableCell>{topic.name}</TableCell>
-                <TableCell>{topic.description}</TableCell>
-                <TableCell>{new Date(topic.createdAt).toLocaleDateString()}</TableCell>
-                <TableCell>{new Date(topic.updatedAt).toLocaleDateString()}</TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {topic.name}
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        display: { xs: 'block', md: 'none' },
+                        fontSize: '0.75rem'
+                      }}
+                    >
+                      {topic.description}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: { xs: 'block', sm: 'none' } }}
+                    >
+                      Created: {new Date(topic.createdAt).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                </TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                  {topic.description}
+                </TableCell>
+                <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                  {new Date(topic.createdAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                  {new Date(topic.updatedAt).toLocaleDateString()}
+                </TableCell>
                 <TableCell align="right">
-                  <IconButton
-                    size="small"
-                    onClick={() => navigate(`/topics/${topic.id}`)}
-                    title="View Summary"
-                    color="primary"
-                    sx={{ mr: 1 }}
-                  >
-                    <AnalyticsIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleOpenDialog(topic)}
-                    title="Edit"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDelete(topic)}
-                    title="Delete"
-                    color="error"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  <Box sx={{
+                    display: 'flex',
+                    gap: 1,
+                    justifyContent: 'flex-end',
+                    flexWrap: 'nowrap'
+                  }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => navigate(`/topics/${topic.id}`)}
+                      title="View Summary"
+                      color="primary"
+                    >
+                      <AnalyticsIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleOpenDialog(topic)}
+                      title="Edit"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDelete(topic)}
+                      title="Delete"
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
@@ -243,7 +300,12 @@ export function TopicsView() {
         </Table>
       </TableContainer>
 
-      <Dialog open={dialogOpen} onClose={handleCloseDialog}>
+      <Dialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>
           {editingTopic ? 'Edit Topic' : 'Add New Topic'}
         </DialogTitle>
@@ -266,12 +328,19 @@ export function TopicsView() {
             />
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button
+            onClick={handleCloseDialog}
+            fullWidth
+            variant="outlined"
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleSubmit}
             variant="contained"
             disabled={!formData.name}
+            fullWidth
           >
             {editingTopic ? 'Save' : 'Add'}
           </Button>
@@ -282,6 +351,7 @@ export function TopicsView() {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
