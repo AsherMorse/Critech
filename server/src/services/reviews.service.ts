@@ -1,5 +1,5 @@
 import { db } from '../db/client'
-import { reviews, videos } from '../db/schema'
+import { reviews, videos, topics } from '../db/schema'
 import { eq, desc, sql, and, lt } from 'drizzle-orm'
 import type { ReviewStatus } from '../db/schema'
 
@@ -13,6 +13,7 @@ export interface CreateReviewFromVideoDto {
   cons?: string[]
   altLinks?: { name: string, url: string }[]
   tags?: string[]
+  topicId?: number // Optional topic ID
 }
 
 // DTO for updating review details
@@ -65,13 +66,20 @@ class ReviewsService {
         archivedAt: reviews.archivedAt,
         createdAt: reviews.createdAt,
         updatedAt: reviews.updatedAt,
+        topicId: reviews.topicId,
         video: sql<any>`json_build_object(
           'videoUrl', ${videos.videoUrl},
           'thumbnailUrl', ${videos.thumbnailUrl}
-        )`
+        )`,
+        topic: sql<any>`CASE WHEN ${topics.id} IS NOT NULL THEN json_build_object(
+          'id', ${topics.id},
+          'name', ${topics.name},
+          'description', ${topics.description}
+        ) ELSE NULL END`
       })
         .from(reviews)
         .leftJoin(videos, eq(reviews.videoId, videos.id))
+        .leftJoin(topics, eq(reviews.topicId, topics.id))
         .where(
           sql`${reviews.status} != 'deleted' 
         AND ${reviews.status} != 'archived'
@@ -89,7 +97,8 @@ class ReviewsService {
       // Transform results to match expected format
       const transformedResults = results.map(result => ({
         ...result,
-        video: result.video.videoUrl ? result.video : undefined
+        video: result.video.videoUrl ? result.video : undefined,
+        topic: result.topic || undefined
       }))
 
       console.timeEnd(`getReviewsPage-${lastId || 'initial'}`)
@@ -98,6 +107,7 @@ class ReviewsService {
         count: transformedResults.length,
         withVideo: transformedResults.filter(r => !!r.video).length,
         withThumbnail: transformedResults.filter(r => !!r.video?.thumbnailUrl).length,
+        withTopic: transformedResults.filter(r => !!r.topic).length,
         ids: transformedResults.map(r => r.id)
       })
 
@@ -130,13 +140,20 @@ class ReviewsService {
         archivedAt: reviews.archivedAt,
         createdAt: reviews.createdAt,
         updatedAt: reviews.updatedAt,
+        topicId: reviews.topicId,
         video: sql<any>`json_build_object(
           'videoUrl', ${videos.videoUrl},
           'thumbnailUrl', ${videos.thumbnailUrl}
-        )`
+        )`,
+        topic: sql<any>`CASE WHEN ${topics.id} IS NOT NULL THEN json_build_object(
+          'id', ${topics.id},
+          'name', ${topics.name},
+          'description', ${topics.description}
+        ) ELSE NULL END`
       })
         .from(reviews)
         .leftJoin(videos, eq(reviews.videoId, videos.id))
+        .leftJoin(topics, eq(reviews.topicId, topics.id))
         .where(
           sql`${reviews.status} != 'deleted' 
         AND ${reviews.status} != 'archived'
@@ -152,14 +169,16 @@ class ReviewsService {
       // Transform results to match expected format
       const transformedResults = results.map(result => ({
         ...result,
-        video: result.video.videoUrl ? result.video : undefined
+        video: result.video.videoUrl ? result.video : undefined,
+        topic: result.topic || undefined
       }))
 
       console.timeEnd('getAllReviews')
       console.log('Query results:', {
         total: transformedResults.length,
         withVideo: transformedResults.filter(r => !!r.video).length,
-        withThumbnail: transformedResults.filter(r => !!r.video?.thumbnailUrl).length
+        withThumbnail: transformedResults.filter(r => !!r.video?.thumbnailUrl).length,
+        withTopic: transformedResults.filter(r => !!r.topic).length
       })
 
       return transformedResults
@@ -180,6 +199,7 @@ class ReviewsService {
       cons: data.cons || [],
       altLinks: data.altLinks || [],
       tags: data.tags || [],
+      topicId: data.topicId,
       status: data.title && data.description ? 'draft' : 'video_uploaded',
       statusHistory: [{
         status: data.title && data.description ? 'draft' : 'video_uploaded',
@@ -249,13 +269,20 @@ class ReviewsService {
       archivedAt: reviews.archivedAt,
       createdAt: reviews.createdAt,
       updatedAt: reviews.updatedAt,
+      topicId: reviews.topicId,
       video: sql<any>`json_build_object(
         'videoUrl', ${videos.videoUrl},
         'thumbnailUrl', ${videos.thumbnailUrl}
-      )`
+      )`,
+      topic: sql<any>`CASE WHEN ${topics.id} IS NOT NULL THEN json_build_object(
+        'id', ${topics.id},
+        'name', ${topics.name},
+        'description', ${topics.description}
+      ) ELSE NULL END`
     })
       .from(reviews)
       .leftJoin(videos, eq(reviews.videoId, videos.id))
+      .leftJoin(topics, eq(reviews.topicId, topics.id))
       .where(eq(reviews.id, id))
       .limit(1)
 
@@ -264,7 +291,8 @@ class ReviewsService {
     const review = result[0]
     return {
       ...review,
-      video: review.video.videoUrl ? review.video : undefined
+      video: review.video.videoUrl ? review.video : undefined,
+      topic: review.topic || undefined
     }
   }
 
