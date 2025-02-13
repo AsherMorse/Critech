@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material'
 
+const API_URL = import.meta.env.VITE_API_URL
+
 interface MarketTrend {
   trend: string;
   description: string;
@@ -55,7 +57,7 @@ export default function TopicSummaryPage() {
       if (!id || !token) return
 
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/topics/${id}`, {
+        const response = await fetch(`${API_URL}/api/topics/${id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'

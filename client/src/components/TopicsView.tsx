@@ -24,6 +24,8 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Analytics as AnalyticsIcon } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 
+const API_URL = import.meta.env.VITE_API_URL
+
 interface Topic {
   id: number
   name: string
@@ -53,7 +55,7 @@ export function TopicsView() {
 
   const fetchTopics = async () => {
     try {
-      const response = await fetch('/api/topics', {
+      const response = await fetch(`${API_URL}/api/topics`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -95,8 +97,8 @@ export function TopicsView() {
   const handleSubmit = async () => {
     try {
       const url = editingTopic
-        ? `/api/topics/${editingTopic.id}`
-        : '/api/topics'
+        ? `${API_URL}/api/topics/${editingTopic.id}`
+        : `${API_URL}/api/topics`
 
       const response = await fetch(url, {
         method: editingTopic ? 'PUT' : 'POST',
@@ -129,7 +131,7 @@ export function TopicsView() {
     if (!window.confirm(`Are you sure you want to delete "${topic.name}"?`)) return
 
     try {
-      const response = await fetch(`/api/topics/${topic.id}`, {
+      const response = await fetch(`${API_URL}/api/topics/${topic.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -291,4 +293,4 @@ export function TopicsView() {
       </Snackbar>
     </Box>
   )
-} 
+}
