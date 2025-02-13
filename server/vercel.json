@@ -1,17 +1,8 @@
 {
   "version": 2,
   "functions": {
-    "api/reviews/from-video": {
-      "maxDuration": 60
-    },
-    "api/topics/*/generate-summary": {
-      "maxDuration": 60
-    },
-    "api/openai/*": {
-      "maxDuration": 30
-    },
     "api/**": {
-      "maxDuration": 15
+      "maxDuration": 60
     }
   },
   "routes": [
