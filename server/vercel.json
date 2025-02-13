@@ -1,16 +1,16 @@
 {
   "version": 2,
   "functions": {
-    "src/controllers/reviews.controller.ts": {
+    "api/reviews/from-video": {
       "maxDuration": 60
     },
-    "src/controllers/topics.controller.ts": {
+    "api/topics/*/generate-summary": {
       "maxDuration": 60
     },
-    "src/controllers/openai.ts": {
+    "api/openai/*": {
       "maxDuration": 30
     },
-    "src/api/**/*.ts": {
+    "api/**": {
       "maxDuration": 15
     }
   },
