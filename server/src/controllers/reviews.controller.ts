@@ -79,12 +79,6 @@ class ReviewsController extends BaseController {
     const lastId = req.query.lastId ? parseInt(req.query.lastId as string) : undefined
     const ownerId = req.query.ownerId as string
 
-    console.log('Pagination params:', {
-      pageSize,
-      lastId,
-      ownerId
-    })
-
     const reviews = await ReviewsService.getReviewsPage(pageSize, lastId, ownerId)
     res.json(reviews)
   })

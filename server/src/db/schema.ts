@@ -6,6 +6,29 @@ export type ReviewStatus = 'video_uploaded' | 'draft' | 'in_review' | 'published
 // Transcript status type
 export type TranscriptStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
+// Market summary type
+export type MarketSummary = {
+  summary: string;
+  overallPros: string[];
+  overallCons: string[];
+  marketTrends: Array<{
+    trend: string;
+    description: string;
+  }>;
+  recommendedAudience: string[];
+  lastUpdated: string;
+}
+
+// Topics table to store product/topic information
+export const topics = pgTable('topics', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  marketSummary: jsonb('market_summary').$type<MarketSummary | null>(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+})
+
 // Videos table to store video metadata
 export const videos = pgTable('videos', {
   id: serial('id').primaryKey(),
@@ -40,7 +63,8 @@ export const videos = pgTable('videos', {
 // Reviews table with required reference to videos
 export const reviews = pgTable('reviews', {
   id: serial('id').primaryKey(),
-  videoId: integer('video_id').notNull().references(() => videos.id), // Make videoId required
+  videoId: integer('video_id').notNull().references(() => videos.id),
+  topicId: integer('topic_id').references(() => topics.id), // Optional reference to topics
   ownerId: text('owner_id').notNull(), // User ID from Supabase auth
   title: varchar('title', { length: 255 }),  // Make title optional initially
   description: text('description'),          // Make description optional initially
