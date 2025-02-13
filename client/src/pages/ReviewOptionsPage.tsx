@@ -347,8 +347,25 @@ export default function ReviewOptionsPage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+        const errorData = await response.text()
+        console.error('Server error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorData
+        })
+
+        let errorMessage: string
+        try {
+          const parsedError = JSON.parse(errorData)
+          errorMessage = parsedError.error || parsedError.message || `HTTP error! status: ${response.status}`
+        } catch {
+          // If the error isn't JSON, use the raw text or status
+          errorMessage = errorData || `HTTP error! status: ${response.status}`
+          if (response.status === 504) {
+            errorMessage = 'Request timed out. Please try again.'
+          }
+        }
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
@@ -358,8 +375,12 @@ export default function ReviewOptionsPage() {
 
       navigate(`/reviews/${data.id}`)
     } catch (error) {
-      console.error('Error creating review:', error)
-      alert(`Error creating review: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('Error creating review:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      alert(`Error creating review: ${error instanceof Error ? error.message : 'An unexpected error occurred'}`)
     } finally {
       setIsLoading(false)
     }
