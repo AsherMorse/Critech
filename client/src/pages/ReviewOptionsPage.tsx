@@ -19,6 +19,10 @@ import { TopicSelector } from '../components/TopicSelector'
 
 const API_URL = import.meta.env.VITE_API_URL
 
+if (!API_URL) {
+  throw new Error('VITE_API_URL environment variable is not set')
+}
+
 interface AltLink {
   name: string;
   url: string;
@@ -167,27 +171,21 @@ export default function ReviewOptionsPage() {
 
   const handleGenerateProsCons = async () => {
     if (!videoData?.transcript || !token) {
-      console.log('Generation skipped:', {
-        hasTranscript: !!videoData?.transcript,
-        hasToken: !!token
-      })
       return
     }
 
-    console.log('Starting pros/cons generation...')
     setIsGenerating(true)
     try {
-      const requestBody = {
-        transcript: videoData.transcript
-      }
-
       const response = await fetch(`${API_URL}/api/openai/generate-pros-cons`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          transcript: videoData.transcript
+        })
       })
 
       if (!response.ok) {
@@ -226,19 +224,18 @@ export default function ReviewOptionsPage() {
 
     setIsGenerating(true)
     try {
-      const requestBody = {
-        transcript: videoData.transcript,
-        title: formData.title,
-        description: formData.description
-      }
-
       const response = await fetch(`${API_URL}/api/openai/generate-tags`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          transcript: videoData.transcript,
+          title: formData.title,
+          description: formData.description
+        })
       })
 
       if (!response.ok) {
@@ -272,19 +269,18 @@ export default function ReviewOptionsPage() {
 
     setIsGenerating(true)
     try {
-      const requestBody = {
-        transcript: videoData.transcript,
-        title: formData.title,
-        description: formData.description
-      }
-
       const response = await fetch(`${API_URL}/api/openai/generate-alt-links`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          transcript: videoData.transcript,
+          title: formData.title,
+          description: formData.description
+        })
       })
 
       if (!response.ok) {
@@ -306,12 +302,10 @@ export default function ReviewOptionsPage() {
         newAltLinks.push({ name: '', url: '' })
       }
 
-      setFormData(prev => {
-        return {
-          ...prev,
-          altLinks: newAltLinks
-        }
-      })
+      setFormData(prev => ({
+        ...prev,
+        altLinks: newAltLinks
+      }))
     } catch (error) {
       console.error('Error in alt links generation:', error)
       alert('Failed to generate alternative links. Please try again or add them manually.')
@@ -333,8 +327,7 @@ export default function ReviewOptionsPage() {
     }
 
     try {
-      const apiUrl = `${import.meta.env.VITE_API_URL}/api/reviews/from-video`
-      const response = await fetch(apiUrl, {
+      const response = await fetch(`${API_URL}/api/reviews/from-video`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
